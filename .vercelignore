@@ -1,0 +1,12 @@
+.venv/
+.vscode/
+__pycache__/
+*.pyc
+notebooks/
+scripts/
+data/parts/
+data/jobs_cleaned.csv
+Jobs_Database.xlsx
+*.xlsx
+*.zip
+
