@@ -111,63 +111,64 @@ server = dash_app.server
 
 CARD_STYLE = {
     "backgroundColor": "#FFFFFF",
-    "borderRadius": "12px",
-    "padding": "16px 20px",
-    "boxShadow": "0 1px 4px rgba(15, 23, 42, 0.08)",
-    "border": "1px solid #E2E8F0",
+    "borderRadius": "18px",
+    "padding": "20px 22px",
+    "boxShadow": "0 12px 30px rgba(15, 23, 42, 0.045)",
+    "border": "1px solid #E7EBF3",
 }
 
 LABEL_STYLE = {
-    "fontSize": "12px",
+    "fontSize": "11px",
     "fontWeight": "600",
-    "color": "#475569",
-    "marginBottom": "4px",
+    "color": "#64718A",
+    "marginBottom": "7px",
     "display": "block",
     "textTransform": "uppercase",
-    "letterSpacing": "0.03em",
+    "letterSpacing": "0.06em",
 }
 
 dash_app.layout = html.Div(
+    className="app-shell",
     style={
         "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        "backgroundColor": "#F1F5F9",
         "minHeight": "100vh",
-        "padding": "20px 28px",
         "color": "#0F172A",
     },
     children=[
-        # Cabeçalho
         html.Div(
+            className="hero",
             style={
                 "display": "flex",
                 "justifyContent": "space-between",
                 "alignItems": "center",
                 "flexWrap": "wrap",
-                "gap": "12px",
-                "marginBottom": "18px",
-                "backgroundColor": "#0F172A",
-                "color": "#FFFFFF",
-                "padding": "18px 24px",
-                "borderRadius": "14px",
+                "gap": "20px",
+                "marginBottom": "22px",
             },
             children=[
-                html.Div([
-                    html.H2(
-                        "Job Postings Fraud Analytics — Database Interativa",
-                        style={"margin": "0", "fontSize": "22px", "fontWeight": "700"},
-                    ),
-                    html.P(
-                        "SQLite Database (jobs_database.db) • 10.000 anúncios de vagas higienizados",
-                        style={"margin": "4px 0 0 0", "fontSize": "13px", "color": "#94A3B8"},
-                    ),
-                ]),
                 html.Div(
+                    className="hero-copy",
+                    children=[
+                        html.Div("PAINEL DE ANÁLISE", className="hero-eyebrow"),
+                        html.H2(
+                            "Job Posting Fraud Analytics",
+                            className="hero-title",
+                        ),
+                        html.P(
+                            "Explore 10.000 anúncios de emprego e investigue sinais de fraude.",
+                            className="hero-subtitle",
+                        ),
+                    ],
+                ),
+                html.Div(
+                    className="hero-actions",
                     style={"display": "flex", "gap": "10px"},
                     children=[
                         html.Button(
                             "Limpar Filtros",
                             id="btn-reset",
                             n_clicks=0,
+                            className="button button-secondary",
                             style={
                                 "backgroundColor": "#334155",
                                 "color": "#FFFFFF",
@@ -182,6 +183,7 @@ dash_app.layout = html.Div(
                             "Baixar CSV Filtrado",
                             id="btn-download",
                             n_clicks=0,
+                            className="button button-primary",
                             style={
                                 "backgroundColor": "#2563EB",
                                 "color": "#FFFFFF",
@@ -198,19 +200,23 @@ dash_app.layout = html.Div(
             ],
         ),
 
-        # Painel de Filtros Interativos
         html.Div(
-            style={**CARD_STYLE, "marginBottom": "18px"},
+            className="panel filter-panel",
+            style={**CARD_STYLE, "marginBottom": "20px"},
             children=[
                 html.Div(
-                    "Filtros Interativos da Database",
-                    style={"fontWeight": "700", "fontSize": "15px", "marginBottom": "14px", "color": "#0F172A"},
+                    className="section-heading",
+                    children=[
+                        html.Div("REFINE A BUSCA", className="section-eyebrow"),
+                        html.H3("Filtros interativos", className="section-title"),
+                    ],
                 ),
                 html.Div(
+                    className="filter-grid",
                     style={
                         "display": "grid",
-                        "gridTemplateColumns": "repeat(auto-fit, minmax(220px, 1fr))",
-                        "gap": "14px",
+                        "gridTemplateColumns": "repeat(auto-fit, minmax(210px, 1fr))",
+                        "gap": "18px 16px",
                     },
                     children=[
                         html.Div([
@@ -224,6 +230,7 @@ dash_app.layout = html.Div(
                                 ],
                                 value="Todas",
                                 inline=True,
+                                className="status-control",
                                 labelStyle={"marginRight": "12px", "fontSize": "13px", "cursor": "pointer"},
                             ),
                         ]),
@@ -234,11 +241,12 @@ dash_app.layout = html.Div(
                                 type="text",
                                 placeholder="Ex.: Engineer, Data, Work from home...",
                                 debounce=True,
+                                className="search-input",
                                 style={
                                     "width": "100%",
-                                    "padding": "7px 10px",
-                                    "borderRadius": "6px",
-                                    "border": "1px solid #CBD5E1",
+                                    "padding": "9px 12px",
+                                    "borderRadius": "9px",
+                                    "border": "1px solid #DCE2ED",
                                     "boxSizing": "border-box",
                                 },
                             ),
@@ -315,6 +323,7 @@ dash_app.layout = html.Div(
                             ),
                         ]),
                         html.Div(
+                            className="range-field",
                             style={"gridColumn": "span 2"},
                             children=[
                                 html.Label("Tamanho do Texto da Descrição (caracteres)", style=LABEL_STYLE),
@@ -340,47 +349,64 @@ dash_app.layout = html.Div(
             ],
         ),
 
-        # Cards de KPIs Dinâmicos
         html.Div(
             id="kpi-row",
+            className="kpi-grid",
             style={
                 "display": "grid",
                 "gridTemplateColumns": "repeat(auto-fit, minmax(180px, 1fr))",
                 "gap": "14px",
-                "marginBottom": "18px",
+                "marginBottom": "20px",
             },
         ),
 
-        # Gráficos Interativos (2x2)
         html.Div(
+            className="chart-grid",
             style={
                 "display": "grid",
-                "gridTemplateColumns": "repeat(auto-fit, minmax(460px, 1fr))",
+                "gridTemplateColumns": "repeat(auto-fit, minmax(360px, 1fr))",
                 "gap": "16px",
-                "marginBottom": "18px",
+                "marginBottom": "20px",
             },
             children=[
-                html.Div(style=CARD_STYLE, children=[dcc.Graph(id="g-setores", config={"displayModeBar": False})]),
-                html.Div(style=CARD_STYLE, children=[dcc.Graph(id="g-logo-fraude", config={"displayModeBar": False})]),
-                html.Div(style=CARD_STYLE, children=[dcc.Graph(id="g-contrato-exp", config={"displayModeBar": False})]),
-                html.Div(style=CARD_STYLE, children=[dcc.Graph(id="g-paises", config={"displayModeBar": False})]),
+                html.Div(
+                    className="panel chart-panel",
+                    style=CARD_STYLE,
+                    children=[dcc.Graph(id="g-setores", config={"displayModeBar": False})],
+                ),
+                html.Div(
+                    className="panel chart-panel",
+                    style=CARD_STYLE,
+                    children=[dcc.Graph(id="g-logo-fraude", config={"displayModeBar": False})],
+                ),
+                html.Div(
+                    className="panel chart-panel",
+                    style=CARD_STYLE,
+                    children=[dcc.Graph(id="g-contrato-exp", config={"displayModeBar": False})],
+                ),
+                html.Div(
+                    className="panel chart-panel",
+                    style=CARD_STYLE,
+                    children=[dcc.Graph(id="g-paises", config={"displayModeBar": False})],
+                ),
             ],
         ),
 
-        # Tabela Interativa da Database + Inspetor de Vaga Limpa
         html.Div(
-            style={**CARD_STYLE, "marginBottom": "18px"},
+            className="panel table-panel",
+            style={**CARD_STYLE, "marginBottom": "20px"},
             children=[
                 html.Div(
+                    className="table-heading",
                     style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", "marginBottom": "10px"},
                     children=[
                         html.H3(
-                            "Registros da Database (Clique em uma vaga para ler o texto completo limpo)",
-                            style={"margin": "0", "fontSize": "16px"},
+                            "Anúncios de emprego",
+                            className="section-title",
                         ),
                         html.Span(
-                            "Dica: você também pode digitar filtros direto no topo de cada coluna da tabela!",
-                            style={"fontSize": "12px", "color": "#64748B"},
+                            "Selecione uma linha para ver os detalhes. Use os cabeçalhos para filtrar.",
+                            className="table-hint",
                         ),
                     ],
                 ),
@@ -406,54 +432,56 @@ dash_app.layout = html.Div(
                     selected_rows=[0],
                     style_table={"overflowX": "auto"},
                     style_header={
-                        "backgroundColor": "#1E293B",
-                        "color": "#FFFFFF",
+                        "backgroundColor": "#F6F8FC",
+                        "color": "#526079",
                         "fontWeight": "600",
-                        "fontSize": "12px",
-                        "border": "1px solid #334155",
+                        "fontSize": "11px",
+                        "border": "1px solid #E7EBF3",
+                        "textTransform": "uppercase",
                     },
                     style_cell={
                         "textAlign": "left",
-                        "padding": "9px 12px",
-                        "fontSize": "13px",
+                        "padding": "11px 12px",
+                        "fontSize": "12px",
                         "maxWidth": "260px",
                         "overflow": "hidden",
                         "textOverflow": "ellipsis",
-                        "border": "1px solid #E2E8F0",
+                        "border": "1px solid #EDF0F5",
+                        "color": "#34415B",
                     },
                     style_data_conditional=[
                         {
                             "if": {"filter_query": '{status_vaga} = "Fraudulenta"'},
-                            "backgroundColor": "#FEF2F2",
-                            "color": "#991B1B",
+                            "backgroundColor": "#FFF1F2",
+                            "color": "#BE123C",
                             "fontWeight": "600",
                         },
                         {
                             "if": {"row_index": "odd", "filter_query": '{status_vaga} != "Fraudulenta"'},
-                            "backgroundColor": "#F8FAFC",
+                            "backgroundColor": "#FAFBFD",
                         },
                     ],
                 ),
             ],
         ),
 
-        # Inspetor de Detalhes do Registro Selecionado
-        html.Div(id="detalhe-vaga", style=CARD_STYLE),
+        html.Div(id="detalhe-vaga", className="panel detail-panel", style=CARD_STYLE),
     ],
 )
 
 
 def make_kpi_card(titulo: str, valor: str, subtitulo: str, cor_borda: str) -> html.Div:
     return html.Div(
+        className="kpi-card",
         style={
             **CARD_STYLE,
             "borderLeft": f"5px solid {cor_borda}",
-            "padding": "14px 18px",
+            "padding": "18px 20px",
         },
         children=[
-            html.Div(titulo, style={"fontSize": "12px", "color": "#64748B", "fontWeight": "600", "textTransform": "uppercase"}),
-            html.Div(valor, style={"fontSize": "26px", "fontWeight": "800", "color": "#0F172A", "margin": "4px 0"}),
-            html.Div(subtitulo, style={"fontSize": "12px", "color": "#475569"}),
+            html.Div(titulo, className="kpi-title"),
+            html.Div(valor, className="kpi-value"),
+            html.Div(subtitulo, className="kpi-caption"),
         ],
     )
 
@@ -514,12 +542,19 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
 
     empty_layout = dict(
         template="plotly_white",
-        margin=dict(l=20, r=20, t=45, b=20),
-        height=330,
+        margin=dict(l=24, r=22, t=50, b=34),
+        height=340,
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif", size=11, color="#71809A"),
     )
 
     if total == 0:
-        empty_fig = go.Figure().update_layout(title="Nenhuma vaga encontrada para este filtro", **empty_layout)
+        empty_fig = go.Figure().update_layout(
+            title="Nenhuma vaga encontrada para este filtro",
+            title_font=dict(size=14, color="#25314C"),
+            **empty_layout,
+        )
         return kpis, empty_fig, empty_fig, empty_fig, empty_fig, [], []
 
     # Gráfico 1: Top 10 Setores (Real vs Fraudulenta)
@@ -540,7 +575,13 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
         labels={"size": "Quantidade de Vagas", "industry_clean": "Setor", "status_vaga": "Status"},
         title="Top 10 Setores / Indústrias no Filtro",
     )
-    fig_setores.update_layout(**empty_layout, yaxis={"categoryorder": "total ascending"}, legend_title_text="")
+    fig_setores.update_layout(
+        **empty_layout,
+        title_font=dict(size=14, color="#25314C"),
+        title_x=0.02,
+        yaxis={"categoryorder": "total ascending", "showgrid": False},
+        legend_title_text="",
+    )
 
     # Gráfico 2: Taxa de Fraude (%) Com Logo vs Sem Logo + Remoto
     grp_logo = (
@@ -562,8 +603,15 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
         labels={"Taxa_Fraude": "Taxa de Fraude (%)", "Grupo": "Presença de Logo da Empresa"},
         title="Taxa de Fraude (%) — Logo da Empresa × Trabalho Remoto",
     )
-    fig_logo.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-    fig_logo.update_layout(**empty_layout, yaxis_range=[0, max(grp_logo["Taxa_Fraude"].max() * 1.25, 5)], legend_title_text="")
+    fig_logo.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_width=0)
+    fig_logo.update_layout(
+        **empty_layout,
+        title_font=dict(size=14, color="#25314C"),
+        title_x=0.02,
+        yaxis_range=[0, max(grp_logo["Taxa_Fraude"].max() * 1.25, 5)],
+        yaxis={"gridcolor": "#EEF1F6"},
+        legend_title_text="",
+    )
 
     # Gráfico 3: Tipo de Contrato vs Experiência
     df_emp = (
@@ -580,7 +628,14 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
         labels={"employment_type_clean": "Tipo de Contrato", "size": "Vagas", "status_vaga": "Status"},
         title="Distribuição por Tipo de Contrato",
     )
-    fig_emp.update_layout(**empty_layout, xaxis={"categoryorder": "total descending"}, legend_title_text="")
+    fig_emp.update_layout(
+        **empty_layout,
+        title_font=dict(size=14, color="#25314C"),
+        title_x=0.02,
+        xaxis={"categoryorder": "total descending", "showgrid": False},
+        yaxis={"gridcolor": "#EEF1F6"},
+        legend_title_text="",
+    )
 
     # Gráfico 4: Top 10 Países no Filtro
     top_paises = df["pais"].value_counts().head(10).index.tolist()
@@ -599,7 +654,14 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
         labels={"pais": "País", "size": "Vagas", "status_vaga": "Status"},
         title="Top 10 Países no Recorte Atual",
     )
-    fig_paises.update_layout(**empty_layout, xaxis={"categoryorder": "total descending"}, legend_title_text="")
+    fig_paises.update_layout(
+        **empty_layout,
+        title_font=dict(size=14, color="#25314C"),
+        title_x=0.02,
+        xaxis={"categoryorder": "total descending", "showgrid": False},
+        yaxis={"gridcolor": "#EEF1F6"},
+        legend_title_text="",
+    )
 
     # Limitar envio inicial da tabela a colunas leves + manter id_vaga para buscar detalhe completo no SQLite
     table_cols = [
