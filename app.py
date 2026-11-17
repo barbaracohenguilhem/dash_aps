@@ -9,7 +9,7 @@ from urllib.parse import quote
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import ClientsideFunction, Dash, Input, Output, State, ctx, dash_table, dcc, html, no_update
+from dash import ALL, ClientsideFunction, Dash, Input, Output, State, ctx, dash_table, dcc, html, no_update
 from flask import Response, abort, request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -95,6 +95,30 @@ def dropdown(id, options, placeholder, multi=True, value=None):
     return dcc.Dropdown(id=id, options=options, value=value, multi=multi, clearable=multi, placeholder=placeholder)
 
 
+def story_links(label, links):
+    return html.Nav([
+        html.Span(label, className="bridge-label"),
+        *[html.A(text, href=f"#{target}") for text, target in links],
+    ], className="story-links", **{"aria-label": label})
+
+
+CHART_CONNECTIONS = {
+    "g-setores": ("O setor é uma pista. Que outras perguntas fazer?", [
+        ("Cruzar logo e trabalho remoto →", "sinais"), ("Localizar nos países ↗", "paises"),
+    ]),
+    "g-logo-fraude": ("Uma associação não explica tudo. Amplie o olhar.", [
+        ("Conhecer os contratos →", "contratos"), ("Ler os anúncios ↗", "explorador"),
+    ]),
+    "g-contrato-exp": ("Você viu o perfil. Onde estão esses anúncios?", [
+        ("Explorar os países →", "paises"), ("Rever os setores ↗", "setores"),
+    ]),
+    "g-paises": ("Dos padrões aos registros: veja o que há por trás.", [
+        ("Investigar os anúncios →", "explorador"), ("Comparar os setores ↗", "setores"),
+    ]),
+}
+CHART_ANCHORS = {"g-setores": "setores", "g-logo-fraude": "sinais", "g-contrato-exp": "contratos", "g-paises": "paises"}
+
+
 def graph_card(eyebrow, title, description, graph_id, wide=False, controls=None):
     return html.Section(
         [
@@ -108,7 +132,9 @@ def graph_card(eyebrow, title, description, graph_id, wide=False, controls=None)
                                      "toImageButtonOptions": {"filename": graph_id, "scale": 2}},
                 style={"height": "390px" if graph_id in ("g-setores", "g-logo-fraude") else "330px"},
             ),
+            story_links(*CHART_CONNECTIONS[graph_id]),
         ],
+        id=CHART_ANCHORS[graph_id], tabIndex=-1,
         className=f"panel chart-card{' chart-wide' if wide else ''}",
     )
 
@@ -129,7 +155,7 @@ dash_app.layout = html.Div(className="app-shell", children=[
             html.Span("Análise exploratória", className="topbar-note"),
         ]),
     ]),
-    html.Main(id="visao-geral", className="main-content", children=[
+    html.Main(id="visao-geral", tabIndex=-1, className="main-content", children=[
         html.Div(className="page-intro", children=[
             html.Div(className="intro-story", children=[
                 html.Div("DADOS QUE REVELAM PADRÕES", className="eyebrow"),
@@ -152,10 +178,17 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 "Os dados são históricos e os rótulos vêm da base original. Associações não comprovam fraude, e não há avaliação de vagas atuais.",
             ]),
         ]),
-        html.Section(id="recorte", className="filter-panel panel", children=[
+        html.Nav(id="story-nav", className="story-nav", **{"aria-label": "Percurso da análise"}, children=[
+            html.A([html.Span(number), label], href=f"#{target}", **{"data-story-target": target})
+            for number, label, target in [
+                ("01", "Recorte", "recorte"), ("02", "Panorama", "panorama"),
+                ("03", "Conexões", "analises"), ("04", "Anúncios", "explorador"),
+            ]
+        ]),
+        html.Section(id="recorte", tabIndex=-1, className="filter-panel panel", children=[
             html.Div(className="section-heading", children=[
                 html.Div([html.Div("01 / EXPLORAR", className="eyebrow"), html.H2("Escolha seu recorte")]),
-                html.P("Os indicadores e gráficos acompanham os filtros abaixo.", className="section-note"),
+                html.P("Comece pela base completa ou escolha uma pergunta. O mesmo recorte acompanha toda a leitura.", className="section-note"),
             ]),
             html.Div(className="filter-grid filter-primary", children=[
                 field("Buscar na vaga", dcc.Input(id="f-busca", type="text", placeholder="Cargo, localização ou texto…", debounce=True), "search-field"),
@@ -186,15 +219,34 @@ dash_app.layout = html.Div(className="app-shell", children=[
                     ), "range-field"),
                 ]),
             ]),
+            story_links("Seu recorte está pronto. Siga o fio.", [("Ler o panorama ↓", "panorama")]),
         ]),
         dcc.Loading(type="circle", children=html.Div([
-            html.Div(className="results-heading", children=[
+            html.Div(id="panorama", tabIndex=-1, className="results-heading", children=[
                 html.Div([html.Div("02 / DESCOBRIR", className="eyebrow"), html.H2("O que os dados mostram")]),
                 html.Div(id="result-context", className="result-context", role="status"),
             ]),
+            html.Aside(className="selection-context", **{"aria-label": "Filtros que conectam a análise"}, children=[
+                html.Div(id="active-filters", role="status", **{"aria-live": "polite", "aria-atomic": "true"}),
+                html.P("Este recorte conecta indicadores, os quatro gráficos, anúncios e CSV. Remover um filtro atualiza todos eles; navegar entre blocos não altera sua seleção."),
+                html.Div(className="context-actions", children=[
+                    html.A("Editar recorte ↑", href="#recorte"),
+                    html.Button("Limpar todos os filtros", id="btn-reset-context", n_clicks=0, className="text-button"),
+                ]),
+            ]),
             html.Div(id="kpi-row", className="kpi-grid"),
             html.Section(id="analysis-summary", className="analysis-summary", **{"aria-label": "Resumo do recorte", "aria-live": "polite"}),
-            html.Div(id="analises", className="charts-grid", children=[
+            story_links("Do panorama às perguntas: por onde aprofundar?", [
+                ("Comparar setores ↓", "setores"), ("Cruzar sinais ↗", "sinais"),
+                ("Ver contratos ↗", "contratos"), ("Explorar países ↗", "paises"),
+            ]),
+            html.Div(id="analises", tabIndex=-1, className="connections-intro", children=[
+                html.Div("03 / CONECTAR", className="eyebrow"),
+                html.H2("Um recorte, quatro perspectivas"),
+                html.P("Cada visual responde a uma pergunta diferente sobre os mesmos anúncios. Clique em um setor ou país para aplicar esse filtro a toda a análise. As legendas dos gráficos alteram apenas a visualização local.", className="section-note"),
+                html.A("↑ Voltar ao panorama", href="#panorama", className="back-link"),
+            ]),
+            html.Div(className="charts-grid", children=[
                 graph_card("01  /  COMPARAÇÃO", "Onde vale aprofundar a análise?",
                            "Clique em um ponto para filtrar o setor (ou use o filtro acima). Tamanho = volume; linha = taxa do recorte. Os dois controles abaixo afetam só este gráfico.",
                            "g-setores", wide=True, controls=html.Div(className="chart-controls", children=[
@@ -211,10 +263,15 @@ dash_app.layout = html.Div(className="app-shell", children=[
                            "Participação de cada contrato no recorte completo. Passe sobre uma fatia para ver a contagem; a legenda permite isolar categorias.", "g-contrato-exp"),
                 graph_card("04  /  GEOGRAFIA", "Países com mais anúncios", "Clique em uma barra para filtrar o país (ou use o filtro acima). Os rótulos são empilhados; a cobertura dos 10 maiores países aparece no resumo.", "g-paises", wide=True),
             ]),
-            html.Section(id="explorador", className="panel records-panel", children=[
+            html.Section(id="explorador", tabIndex=-1, className="panel records-panel", children=[
                 html.Div(className="section-heading records-heading", children=[
-                    html.Div([html.Div("03 / INVESTIGAR", className="eyebrow"), html.H2("Investigue os anúncios"), html.P("Selecione uma linha para ler o registro completo.", className="section-note")]),
+                    html.Div([html.Div("04 / INVESTIGAR", className="eyebrow"), html.H2("Investigue os anúncios"), html.P("Os padrões trouxeram você até aqui. Selecione uma linha para ler o anúncio que compõe este recorte.", className="section-note")]),
                     html.Div("Filtros e ordenação da tabela não alteram gráficos ou CSV.", className="table-note"),
+                ]),
+                html.Div(className="table-navigation", children=[
+                    html.Span("Mais colunas à direita. Deslize a tabela ou use as setas."),
+                    html.Button("← Colunas", type="button", **{"data-table-scroll": "-1", "aria-label": "Ver colunas anteriores", "aria-controls": "tabela-vagas"}),
+                    html.Button("Colunas →", type="button", **{"data-table-scroll": "1", "aria-label": "Ver próximas colunas", "aria-controls": "tabela-vagas"}),
                 ]),
                 dash_table.DataTable(
                     id="tabela-vagas",
@@ -233,7 +290,11 @@ dash_app.layout = html.Div(className="app-shell", children=[
                     style_cell={"textAlign": "left", "padding": "12px", "fontSize": "13px", "minWidth": "85px", "maxWidth": "230px", "overflow": "hidden", "textOverflow": "ellipsis", "border": "0", "borderBottom": "1px solid #ded6ca", "fontFamily": "Jost, Segoe UI, Arial, sans-serif", "color": "#28211e"},
                     style_data_conditional=[{"if": {"filter_query": '{status_vaga} = "Fraudulenta"', "column_id": "status_vaga"}, "color": "#ad4035", "fontWeight": "700"}],
                 ),
-                html.Div(id="detalhe-vaga", className="record-detail"),
+                html.A("Ler registro selecionado ↓", href="#detalhe-vaga", className="back-link"),
+                html.Div(id="detalhe-vaga", tabIndex=-1, className="record-detail"),
+                story_links("A investigação pode continuar por outro caminho.", [
+                    ("← Rever os visuais", "analises"), ("Mudar a pergunta ↑", "recorte"), ("Voltar ao início ↑", "visao-geral"),
+                ]),
             ]),
         ])),
         html.Footer("Radar de vagas · Uma ferramenta de exploração, não um classificador de fraude.", className="footer"),
@@ -260,9 +321,9 @@ def make_kpi_card(title: str, value: str, subtitle: str, accent: str) -> html.Di
     Output("f-tam", "value"), Output("tabela-vagas", "filter_query"),
     Output("sector-order", "value"), Output("sector-min", "value"),
     Output("g-setores", "clickData"), Output("g-paises", "clickData"),
-    Input("btn-reset", "n_clicks"), prevent_initial_call=True,
+    Input("btn-reset", "n_clicks"), Input("btn-reset-context", "n_clicks"), prevent_initial_call=True,
 )
-def reset_filters(_n):
+def reset_filters(_n, _context_n=None):
     return "Todas", "", "Todos", "Todos", [], [], [], [], [], [0, MAX_DESC_LEN], "", "total", 30, None, None
 
 
@@ -287,6 +348,52 @@ def chart_filter_selection(chart_id, click_data):
 )
 def filter_from_chart(sector_click, country_click):
     return chart_filter_selection(ctx.triggered_id, sector_click if ctx.triggered_id == "g-setores" else country_click)
+
+
+FILTER_IDS = ["f-status", "f-pais", "f-setor", "f-contrato", "f-exp", "f-edu", "f-logo", "f-remoto", "f-busca", "f-tam"]
+FILTER_LABELS = ["Status", "País", "Setor", "Contrato", "Experiência", "Escolaridade", "Logo", "Remoto", "Busca", "Descrição"]
+FILTER_DEFAULTS = ["Todas", [], [], [], [], [], "Todos", "Todos", "", [0, MAX_DESC_LEN]]
+
+
+@dash_app.callback(Output("active-filters", "children"), *[Input(id, "value") for id in FILTER_IDS])
+def active_filter_labels(*values):
+    chips = []
+    for id, label, default, value in zip(FILTER_IDS, FILTER_LABELS, FILTER_DEFAULTS, values):
+        if value is None or value == default or (id == "f-busca" and not value.strip()):
+            continue
+        if id == "f-tam":
+            text = f"{format_count(value[0])}–{format_count(value[1])} caracteres"
+        elif isinstance(value, list):
+            text = ", ".join(str(item) for item in value)
+        else:
+            text = str(value)
+        chips.append(html.Button([
+            f"{label}: {text}", html.Span(" ×", **{"aria-hidden": "true"}),
+        ], id={"type": "remove-filter", "key": id}, n_clicks=0, className="filter-chip",
+            **{"aria-label": f"Remover filtro {label}: {text}"}))
+    return [html.Strong("Recorte em foco"), html.Div(chips, className="filter-chips")] if chips else [
+        html.Strong("Base completa"), html.Span(" · nenhum filtro aplicado"),
+    ]
+
+
+def clear_filter_values(filter_id):
+    values = [default if id == filter_id else no_update for id, default in zip(FILTER_IDS, FILTER_DEFAULTS)]
+    return (*values, None if filter_id == "f-setor" else no_update, None if filter_id == "f-pais" else no_update)
+
+
+@dash_app.callback(
+    *[Output(id, "value", allow_duplicate=True) for id in FILTER_IDS],
+    Output("g-setores", "clickData", allow_duplicate=True), Output("g-paises", "clickData", allow_duplicate=True),
+    Input({"type": "remove-filter", "key": ALL}, "n_clicks"), prevent_initial_call=True,
+)
+def remove_filter(clicks):
+    # Pattern inputs also change when chips mount/unmount; only a real button click removes a filter.
+    triggered = ctx.triggered_id
+    if not isinstance(triggered, dict) or not any(
+        item["id"] == triggered and item["value"] for item in ctx.inputs_list[0]
+    ):
+        return (no_update,) * 12
+    return clear_filter_values(triggered["key"])
 
 
 def chart_layout(fig, height=320):

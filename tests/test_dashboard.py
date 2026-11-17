@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import sqlite3
 import unittest
 
@@ -42,9 +43,58 @@ class DashboardTest(unittest.TestCase):
         self.assertIs(app.app, app.server)
         client = app.server.test_client()
         for path in ("/", "/_dash-layout", "/_dash-dependencies", "/assets/dashboard.css",
-                     "/assets/field-notes.svg", "/assets/fonts/jost-latin-wght-normal.woff2"):
+                     "/assets/story.js", "/assets/field-notes.svg", "/assets/fonts/jost-latin-wght-normal.woff2"):
             with client.get(path) as response:
                 self.assertEqual(response.status_code, 200, path)
+
+    def test_active_filter_chips_cover_every_dimension_and_remove_only_one(self):
+        default = filters()
+        self.assertIn("Base completa", app.active_filter_labels(*default)[0].children)
+        values = filters(status="Fraudulenta", paises=["US"], setores=["Oil & Energy"],
+                         contratos=["Full-time"], exps=["Entry level"], edus=["Bachelor's Degree"],
+                         logo="Não", remoto="Sim", busca="engineer", tam_range=[100, 2000])
+        chips = app.active_filter_labels(*values)[1].children
+        self.assertEqual(len(chips), 10)
+        self.assertEqual({chip.id["key"] for chip in chips}, set(app.FILTER_IDS))
+        for chip in chips:
+            cleared = app.clear_filter_values(chip.id["key"])
+            for i, id in enumerate(app.FILTER_IDS):
+                if id == chip.id["key"]:
+                    self.assertEqual(cleared[i], app.FILTER_DEFAULTS[i])
+                else:
+                    self.assertIs(cleared[i], app.no_update)
+        self.assertIsNone(app.clear_filter_values("f-setor")[-2])
+        self.assertIsNone(app.clear_filter_values("f-pais")[-1])
+        self.assertEqual(app.reset_filters(0, 1), app.reset_filters(1))
+
+    def test_remove_filter_http_callback_ignores_mounts_and_keeps_other_filters(self):
+        key, callback = next((key, callback) for key, callback in app.dash_app.callback_map.items()
+                             if callback.get("callback") and callback["callback"].__name__ == "remove_filter")
+        chip = {"type": "remove-filter", "key": "f-pais"}
+        outputs = [{"id": out.component_id, "property": out.component_property} for out in callback["output"]]
+        client = app.server.test_client()
+        for clicks in (0, 1):
+            response = client.post("/_dash-update-component", json={
+                "output": key, "outputs": outputs,
+                "inputs": [[{"id": chip, "property": "n_clicks", "value": clicks}]],
+                "state": [], "changedPropIds": [json.dumps(chip, separators=(",", ":"), sort_keys=True) + ".n_clicks"],
+            })
+            if clicks:
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json["response"], {"f-pais": {"value": []}, "g-paises": {"clickData": None}})
+            else:
+                self.assertIn(response.status_code, (200, 204))
+                if response.status_code == 200:
+                    self.assertEqual(response.json["response"], {})
+
+    def test_chart_connections_have_context_and_preserve_filters(self):
+        for chart, (label, links) in app.CHART_CONNECTIONS.items():
+            card = app.graph_card("test", "Title", "Description", chart)
+            self.assertEqual(card.id, app.CHART_ANCHORS[chart])
+            bridge = card.children[-1]
+            self.assertEqual(bridge.children[0].children, label)
+            self.assertEqual([link.href for link in bridge.children[1:]], [f"#{target}" for _, target in links])
+            self.assertTrue(all(link.href.startswith("#") for link in bridge.children[1:]))
 
     def test_all_records_are_available_and_selection_has_stable_ids(self):
         context, _, _, _, _, _, records, selection, page, summary = app.update_dashboard(*filters())
