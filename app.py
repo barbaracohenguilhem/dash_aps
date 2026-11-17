@@ -104,16 +104,16 @@ def story_links(label, links):
 
 CHART_CONNECTIONS = {
     "g-setores": ("O setor é uma pista. Que outras perguntas fazer?", [
-        ("Cruzar logo e trabalho remoto →", "sinais"), ("Localizar nos países ↗", "paises"),
+        ("Cruzar logo e trabalho remoto →", "sinais"), ("Localizar nos países →", "paises"),
     ]),
     "g-logo-fraude": ("Uma associação não explica tudo. Amplie o olhar.", [
-        ("Conhecer os contratos →", "contratos"), ("Ler os anúncios ↗", "explorador"),
+        ("Conhecer os contratos →", "contratos"), ("Ler os anúncios →", "explorador"),
     ]),
     "g-contrato-exp": ("Você viu o perfil. Onde estão esses anúncios?", [
-        ("Explorar os países →", "paises"), ("Rever os setores ↗", "setores"),
+        ("Explorar os países →", "paises"), ("Rever os setores →", "setores"),
     ]),
     "g-paises": ("Dos padrões aos registros: veja o que há por trás.", [
-        ("Investigar os anúncios →", "explorador"), ("Comparar os setores ↗", "setores"),
+        ("Investigar os anúncios →", "explorador"), ("Comparar os setores →", "setores"),
     ]),
 }
 CHART_ANCHORS = {"g-setores": "setores", "g-logo-fraude": "sinais", "g-contrato-exp": "contratos", "g-paises": "paises"}
@@ -132,6 +132,10 @@ def graph_card(eyebrow, title, description, graph_id, wide=False, controls=None)
                                      "toImageButtonOptions": {"filename": graph_id, "scale": 2}},
                 style={"height": "390px" if graph_id in ("g-setores", "g-logo-fraude") else "330px"},
             ),
+            html.Div(className="chart-context", children=[
+                html.Div(id=f"recorte-{graph_id}", role="status", **{"aria-live": "polite"}),
+                html.A("Ver ou editar o recorte ↑", href="#panorama"),
+            ]),
             story_links(*CHART_CONNECTIONS[graph_id]),
         ],
         id=CHART_ANCHORS[graph_id], tabIndex=-1,
@@ -237,8 +241,8 @@ dash_app.layout = html.Div(className="app-shell", children=[
             html.Div(id="kpi-row", className="kpi-grid"),
             html.Section(id="analysis-summary", className="analysis-summary", **{"aria-label": "Resumo do recorte", "aria-live": "polite"}),
             story_links("Do panorama às perguntas: por onde aprofundar?", [
-                ("Comparar setores ↓", "setores"), ("Cruzar sinais ↗", "sinais"),
-                ("Ver contratos ↗", "contratos"), ("Explorar países ↗", "paises"),
+                ("Comparar setores ↓", "setores"), ("Cruzar sinais →", "sinais"),
+                ("Ver contratos →", "contratos"), ("Explorar países →", "paises"),
             ]),
             html.Div(id="analises", tabIndex=-1, className="connections-intro", children=[
                 html.Div("03 / CONECTAR", className="eyebrow"),
@@ -355,7 +359,6 @@ FILTER_LABELS = ["Status", "País", "Setor", "Contrato", "Experiência", "Escola
 FILTER_DEFAULTS = ["Todas", [], [], [], [], [], "Todos", "Todos", "", [0, MAX_DESC_LEN]]
 
 
-@dash_app.callback(Output("active-filters", "children"), *[Input(id, "value") for id in FILTER_IDS])
 def active_filter_labels(*values):
     chips = []
     for id, label, default, value in zip(FILTER_IDS, FILTER_LABELS, FILTER_DEFAULTS, values):
@@ -374,6 +377,18 @@ def active_filter_labels(*values):
     return [html.Strong("Recorte em foco"), html.Div(chips, className="filter-chips")] if chips else [
         html.Strong("Base completa"), html.Span(" · nenhum filtro aplicado"),
     ]
+
+
+@dash_app.callback(
+    Output("active-filters", "children"),
+    *[Output(f"recorte-{chart_id}", "children") for chart_id in CHART_ANCHORS],
+    *[Input(id, "value") for id in FILTER_IDS],
+)
+def describe_selection(*values):
+    labels = active_filter_labels(*values)
+    summary = ("Recorte em foco · " + " · ".join(chip.children[0] for chip in labels[1].children)
+               if labels[0].children == "Recorte em foco" else "Base completa · nenhum filtro aplicado")
+    return (labels, *([summary] * len(CHART_ANCHORS)))
 
 
 def clear_filter_values(filter_id):

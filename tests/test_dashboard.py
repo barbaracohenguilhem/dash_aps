@@ -53,6 +53,9 @@ class DashboardTest(unittest.TestCase):
         values = filters(status="Fraudulenta", paises=["US"], setores=["Oil & Energy"],
                          contratos=["Full-time"], exps=["Entry level"], edus=["Bachelor's Degree"],
                          logo="Não", remoto="Sim", busca="engineer", tam_range=[100, 2000])
+        descriptions = app.describe_selection(*values)
+        self.assertEqual(len(descriptions), 5)
+        self.assertTrue(all("País: US" in text and "Busca: engineer" in text for text in descriptions[1:]))
         chips = app.active_filter_labels(*values)[1].children
         self.assertEqual(len(chips), 10)
         self.assertEqual({chip.id["key"] for chip in chips}, set(app.FILTER_IDS))
