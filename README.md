@@ -1,4 +1,4 @@
-# Job Postings Fraud Analytics — Database & Dashboard
+# Radar de vagas — Database & Dashboard
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/barbaracohenguilhem/DataSet_limpo_em_partes)
 
@@ -44,9 +44,10 @@ Projeto de tratamento de dados, estruturação de **Database Interativa (Excel &
 ### 1. Dashboard Python Dash ([`app.py`](./app.py))
 
 - **10 Filtros Interativos Combinados:** Status (`Todas` / `Reais` / `Fraudulentas`), Busca livre por palavra-chave, Logo da Empresa, Trabalho Remoto, País, Setor/Indústria, Tipo de Contrato, Nível de Experiência, Escolaridade e Faixa de Tamanho da Descrição.
-- **5 Indicadores (KPIs) em Tempo Real + 4 Gráficos Plotly Interativos.**
-- **Tabela da Database Pesquisável:** ordenação e filtro por coluna, destaque visual para vagas fraudulentas e **Inspetor de Registro** (clique em qualquer vaga para visualizar a descrição, requisitos e benefícios completos já limpos).
-- **Exportação Instantânea:** download do recorte filtrado em `.csv`.
+- **Indicadores e gráficos:** compare a taxa de rótulos de fraude por setor e por presença de logo/modalidade, sempre com o tamanho do grupo, além da distribuição por contrato e país. A taxa usa os anúncios do recorte atual; se o status for filtrado, a taxa reflete somente os rótulos selecionados.
+- **Explorador de todos os registros:** ordene, filtre as colunas e selecione uma linha para ler descrição, requisitos, perfil da empresa e benefícios. Os filtros da tabela afetam apenas a tabela; os filtros acima dela afetam indicadores, gráficos e exportação.
+- **Exportação:** baixe todas as vagas do recorte definido nos filtros principais e avançados em `.csv`, incluindo o texto completo. O arquivo é montado no navegador em partes para evitar o limite de resposta serverless; mantenha a página aberta até o download começar.
+- **Interpretação:** os rótulos são históricos e vêm da base original. A ferramenta não classifica vagas atuais; correlação e ausência de logo não comprovam fraude.
 
 ### 2. Database em Excel ([`Jobs_Database.xlsx`](./Jobs_Database.xlsx))
 
@@ -69,6 +70,12 @@ python app.py
 ```
 
 Acesse em `http://localhost:8050`.
+
+Para verificar as consultas, indicadores e exportação:
+
+```bash
+python -m unittest discover -s tests
+```
 
 ## Como Publicar na Vercel
 
