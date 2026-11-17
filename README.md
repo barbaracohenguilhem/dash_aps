@@ -44,6 +44,7 @@ Projeto de tratamento de dados, estruturação de **Database Interativa (Excel &
 ### 1. Dashboard Python Dash ([`app.py`](./app.py))
 
 - **10 Filtros Interativos Combinados:** Status (`Todas` / `Reais` / `Fraudulentas`), Busca livre por palavra-chave, Logo da Empresa, Trabalho Remoto, País, Setor/Indústria, Tipo de Contrato, Nível de Experiência, Escolaridade e Faixa de Tamanho da Descrição.
+- **Percurso conectado:** índice fixo com etapa atual, ligações entre perspectivas e atalhos de volta. Navegar preserva o recorte. No panorama, os filtros ativos podem ser removidos individualmente ou limpos em conjunto; os botões de colunas ajudam a percorrer a tabela horizontalmente.
 - **Leitura rápida:** resumo do recorte com taxa de fraude, diferença em pontos percentuais em relação à base completa, concentração por país e cobertura dos dez maiores países. Com status filtrado, a comparação dá lugar a um aviso de interpretação.
 - **Quatro formas de visualizar:** pontos por setor (tamanho = volume, linha = taxa do recorte), mapa de calor de logo × remoto (escala fixa de 0–100%, com amostras e lacunas sem dados), rosca com composição dos contratos e barras empilhadas por país.
 - **Comparação de setores:** escolha entre maior volume e maior taxa; exija pelo menos 1, 30, 100 ou 500 anúncios por setor. Esses controles alteram apenas a comparação de setores, não o recorte nem o CSV. Até dez setores elegíveis são mostrados; uma amostra mínima não elimina a incerteza estatística.
