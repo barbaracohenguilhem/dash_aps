@@ -43,9 +43,13 @@ class DashboardTest(unittest.TestCase):
         self.assertIs(app.app, app.server)
         client = app.server.test_client()
         for path in ("/", "/_dash-layout", "/_dash-dependencies", "/assets/dashboard.css",
-                     "/assets/story.js", "/assets/field-notes.svg", "/assets/fonts/jost-latin-wght-normal.woff2"):
+                     "/assets/accessibility.js", "/assets/story.js", "/assets/field-notes.svg", "/assets/fonts/jost-latin-wght-normal.woff2"):
             with client.get(path) as response:
                 self.assertEqual(response.status_code, 200, path)
+
+    def test_document_declares_brazilian_portuguese(self):
+        with app.server.test_client().get("/") as response:
+            self.assertIn('<html lang="pt-BR">', response.get_data(as_text=True))
 
     def test_active_filter_chips_cover_every_dimension_and_remove_only_one(self):
         default = filters()

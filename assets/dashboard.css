@@ -237,3 +237,9 @@ html { scroll-padding-top: 102px; }
 
 .chart-context { font-size: 11px; color: var(--muted); line-height: 1.6; padding: 14px 0; overflow-wrap: anywhere; }
 .chart-context a { display: inline-block; margin-top: 5px; color: var(--accent); text-decoration-color: #ad40354d; text-underline-offset: 4px; }
+
+/* Dash 4.5 focus proxies are aria-hidden; the visible button is the tab stop. */
+.dash-dropdown-wrapper > .dash-dropdown-focus-target { display: none !important; }
+.dash-dropdown-placeholder { color: var(--muted) !important; }
+#tabela-vagas .dash-filter input.dash-filter--case { color: #68594f !important; opacity: 1 !important; background: var(--surface); }
+#tabela-vagas .dash-filter input.dash-filter--case--sensitive { color: #ad4035 !important; text-decoration: underline; text-underline-offset: 3px; }

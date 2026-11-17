@@ -1,0 +1,9 @@
+{
+  "name": "radar-accessibility-tests",
+  "private": true,
+  "scripts": {"test": "node accessibility.cjs"},
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "playwright": "1.65.1"
+  }
+}

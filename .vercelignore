@@ -10,3 +10,4 @@ Jobs_Database.xlsx
 *.xlsx
 *.zip
 
+tests/browser/

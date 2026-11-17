@@ -82,6 +82,24 @@ Para verificar as consultas, indicadores e exportação:
 python -m unittest discover -s tests
 ```
 
+### Regressão de acessibilidade no navegador
+
+Com a aplicação rodando localmente (`python app.py`), em outro terminal:
+
+```bash
+npm ci --prefix tests/browser
+npx --prefix tests/browser playwright install chromium
+npm test --prefix tests/browser
+```
+
+O teste usa Chromium + axe-core (WCAG A/AA) e verifica idioma, nomes dos controles,
+contraste, teclado nos dropdowns, seleção de vagas, paginação, ordenação,
+filtros da tabela, estado vazio e layout móvel. `DASH_TEST_URL` aceita apenas localhost
+ou 127.0.0.1; o padrão é `http://127.0.0.1:8050`.
+Esses testes não substituem uma avaliação manual com leitor de tela.
+As adaptações em `assets/accessibility.js` são restritas aos controles gerados pelo
+Dash 4.5 e devem ser reavaliadas ao atualizar a biblioteca.
+
 ## Como Publicar na Vercel
 
 1. Faça push deste repositório para o GitHub:

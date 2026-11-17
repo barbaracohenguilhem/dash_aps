@@ -83,6 +83,8 @@ MAX_DESC_LEN = OPTS["max_len"]
 BASE_RATE = 100 * OPTS["frauds"] / OPTS["total"] if OPTS["total"] else 0
 
 dash_app = Dash(__name__, title="Radar de vagas | Análise de fraude", update_title="Atualizando análise…")
+# Dash does not expose a document-language option; retain its standard template.
+dash_app.index_string = dash_app.index_string.replace("<html>", '<html lang="pt-BR">', 1)
 app = dash_app.server
 server = app
 
