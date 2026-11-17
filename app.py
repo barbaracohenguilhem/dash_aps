@@ -349,12 +349,12 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
             custom_data=["fraudes", "total"], color_discrete_sequence=["#368c91"],
             labels={"taxa": "Taxa de fraude", "industry_clean": ""},
         )
-        fig_sectors.update_traces(marker=dict(opacity=.85, line=dict(width=1, color="white")),
+        fig_sectors.update_traces(cliponaxis=False, marker=dict(opacity=.85, line=dict(width=1, color="white")),
                                  hovertemplate="<b>%{y}</b><br>Taxa: %{x:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>")
         chart_layout(fig_sectors, 390)
         fig_sectors.add_vline(x=rate, line_dash="dot", line_color="#b28355")
         fig_sectors.update_xaxes(showgrid=True, gridcolor="#edf1f5", ticksuffix="%",
-                                 range=[-2, max(float(plotted["taxa"].max()), rate, 5) * 1.15])
+                                 range=[0, max(float(plotted["taxa"].max()), rate, 5) * 1.15])
         fig_sectors.update_yaxes(showgrid=False, categoryorder="array", categoryarray=plotted["industry_clean"].tolist(),
                                  tickmode="array", tickvals=plotted["industry_clean"].tolist(),
                                  ticktext=[name if len(name) <= 19 else name[:18] + "…" for name in plotted["industry_clean"]])

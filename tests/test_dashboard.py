@@ -106,6 +106,8 @@ class DashboardTest(unittest.TestCase):
         result = app.update_dashboard(*filters(), sector_order="taxa", sector_min=100)
         _, _, sectors, _, donut, _, records, _, _, _ = result
         self.assertLessEqual(len(sectors.data[0].x), 10)
+        self.assertEqual(sectors.layout.xaxis.range[0], 0)
+        self.assertFalse(sectors.data[0].cliponaxis)
         self.assertEqual(list(sectors.data[0].x), sorted(sectors.data[0].x))
         self.assertTrue(all(row[1] >= 100 for row in sectors.data[0].customdata))
         self.assertEqual(len(records), app.OPTS["total"])
