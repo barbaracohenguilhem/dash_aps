@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="540" viewBox="0 0 540 540" fill="none">
+  <!-- Original editorial illustration: a closer look at a collection of job postings. Not a data chart. -->
+  <g stroke="#b8ac9b" stroke-width="1">
+    <circle cx="270" cy="270" r="228" stroke-dasharray="2 7"/>
+    <ellipse cx="270" cy="270" rx="204" ry="176" transform="rotate(-32 270 270)"/>
+    <ellipse cx="270" cy="270" rx="204" ry="176" transform="rotate(32 270 270)"/>
+    <path d="M33 270h46m382 0h46M270 33v46m0 382v46"/>
+  </g>
+  <g transform="rotate(-19 210 260)">
+    <rect x="117" y="146" width="178" height="235" rx="85" fill="#d8d4df" stroke="#91879f"/>
+    <circle cx="206" cy="203" r="16" stroke="#70677e"/>
+    <path d="M164 247h84m-84 15h84m-84 15h64m-64 41h84m-84 15h53" stroke="#70677e" stroke-linecap="round"/>
+  </g>
+  <g transform="rotate(16 325 264)">
+    <rect x="246" y="137" width="165" height="245" rx="8" fill="#e1e5d4" stroke="#8b9675"/>
+    <path d="M270 163h39m-39 48h116m-116 15h116m-116 15h76m-76 44h116m-116 15h116m-116 15h60" stroke="#73805e" stroke-linecap="round"/>
+    <circle cx="373" cy="172" r="8" fill="#8b9675"/>
+  </g>
+  <g transform="rotate(-7 271 282)">
+    <rect x="187" y="198" width="174" height="211" rx="6" fill="#f4efe5" stroke="#68594f"/>
+    <path d="M212 227h52m-52 38h124m-124 15h124m-124 15h88m-88 38h124m-124 15h101m-101 36h41" stroke="#68594f" stroke-linecap="round"/>
+    <circle cx="325" cy="228" r="9" fill="#e56952"/>
+  </g>
+  <circle cx="315" cy="299" r="73" fill="#f4efe5" fill-opacity=".5" stroke="#c4513f" stroke-width="2"/>
+  <circle cx="315" cy="299" r="64" stroke="#c4513f" stroke-width=".75"/>
+  <path d="m366 351 56 56" stroke="#c4513f" stroke-width="11" stroke-linecap="round"/>
+  <path d="M286 287h58m-58 13h58m-58 13h36" stroke="#c4513f" stroke-width="2" stroke-linecap="round"/>
+  <g fill="#f4efe5" stroke="#c4513f">
+    <circle cx="118" cy="114" r="9"/><circle cx="462" cy="307" r="6"/>
+    <path d="m399 95 6-10 6 10-6 10zM96 389l6-10 6 10-6 10z"/>
+  </g>
+  <g stroke="#68594f" stroke-linecap="round">
+    <path d="M212 68v12m-6-6h12M438 434v12m-6-6h12M72 222v10m-5-5h10"/>
+  </g>
+</svg>

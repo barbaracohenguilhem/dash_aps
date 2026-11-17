@@ -131,12 +131,15 @@ dash_app.layout = html.Div(className="app-shell", children=[
     ]),
     html.Main(id="visao-geral", className="main-content", children=[
         html.Div(className="page-intro", children=[
-            html.Div([
+            html.Div(className="intro-story", children=[
                 html.Div("DADOS QUE REVELAM PADRÕES", className="eyebrow"),
-                html.H1(["Um novo olhar sobre", html.Br(), html.Span("o mercado de trabalho.")]),
+                html.H1(["Um novo olhar", html.Br(), "sobre o mercado", html.Br(), html.Span("de trabalho.")]),
                 html.P("Explore os anúncios e compare os rótulos de fraude em cada recorte.", className="intro-copy"),
+                html.A(["Explore os dados", html.Span(" ↓", **{"aria-hidden": "true"})], href="#recorte", className="explore-link"),
             ]),
+            html.Img(src=dash_app.get_asset_url("field-notes.svg"), alt="", className="intro-illustration", **{"aria-hidden": "true"}),
             html.Div(className="intro-actions", children=[
+                html.Div("OBSERVAR / COMPARAR / INVESTIGAR", className="intro-caption"),
                 html.Button("Limpar filtros", id="btn-reset", n_clicks=0, className="button button-secondary"),
                 html.Button("↓  Exportar CSV", id="btn-download", n_clicks=0, className="button button-primary"),
                 html.Div(id="export-status", className="export-status", role="status"),
@@ -149,9 +152,9 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 "Os dados são históricos e os rótulos vêm da base original. Associações não comprovam fraude, e não há avaliação de vagas atuais.",
             ]),
         ]),
-        html.Section(className="filter-panel panel", children=[
+        html.Section(id="recorte", className="filter-panel panel", children=[
             html.Div(className="section-heading", children=[
-                html.Div([html.Div("EXPLORAR", className="eyebrow"), html.H2("Escolha seu recorte")]),
+                html.Div([html.Div("01 / EXPLORAR", className="eyebrow"), html.H2("Escolha seu recorte")]),
                 html.P("Os indicadores e gráficos acompanham os filtros abaixo.", className="section-note"),
             ]),
             html.Div(className="filter-grid filter-primary", children=[
@@ -186,7 +189,7 @@ dash_app.layout = html.Div(className="app-shell", children=[
         ]),
         dcc.Loading(type="circle", children=html.Div([
             html.Div(className="results-heading", children=[
-                html.Div([html.Div("SEU RECORTE", className="eyebrow"), html.H2("O que os dados mostram")]),
+                html.Div([html.Div("02 / DESCOBRIR", className="eyebrow"), html.H2("O que os dados mostram")]),
                 html.Div(id="result-context", className="result-context", role="status"),
             ]),
             html.Div(id="kpi-row", className="kpi-grid"),
@@ -210,7 +213,7 @@ dash_app.layout = html.Div(className="app-shell", children=[
             ]),
             html.Section(id="explorador", className="panel records-panel", children=[
                 html.Div(className="section-heading records-heading", children=[
-                    html.Div([html.Div("EXPLORADOR", className="eyebrow"), html.H2("Investigue os anúncios"), html.P("Selecione uma linha para ler o registro completo.", className="section-note")]),
+                    html.Div([html.Div("03 / INVESTIGAR", className="eyebrow"), html.H2("Investigue os anúncios"), html.P("Selecione uma linha para ler o registro completo.", className="section-note")]),
                     html.Div("Filtros e ordenação da tabela não alteram gráficos ou CSV.", className="table-note"),
                 ]),
                 dash_table.DataTable(
@@ -225,9 +228,10 @@ dash_app.layout = html.Div(className="app-shell", children=[
                     ],
                     page_size=10, sort_action="native", filter_action="native", row_selectable="single",
                     selected_rows=[], style_table={"overflowX": "auto"},
-                    style_header={"backgroundColor": "#f5f8f9", "color": "#566478", "fontWeight": "700", "fontSize": "11px", "border": "0", "borderBottom": "1px solid #e3e9f0", "textTransform": "uppercase"},
-                    style_cell={"textAlign": "left", "padding": "12px", "fontSize": "13px", "minWidth": "85px", "maxWidth": "230px", "overflow": "hidden", "textOverflow": "ellipsis", "border": "0", "borderBottom": "1px solid #edf1f5", "fontFamily": "Inter, Segoe UI, Arial, sans-serif", "color": "#334155"},
-                    style_data_conditional=[{"if": {"filter_query": '{status_vaga} = "Fraudulenta"', "column_id": "status_vaga"}, "color": "#b33c4a", "fontWeight": "700"}],
+                    style_header={"backgroundColor": "#eae3d7", "color": "#68594f", "fontWeight": "700", "fontSize": "11px", "border": "0", "borderBottom": "1px solid #d6cdbf", "textTransform": "uppercase"},
+                    style_data={"backgroundColor": "#f4efe5"},
+                    style_cell={"textAlign": "left", "padding": "12px", "fontSize": "13px", "minWidth": "85px", "maxWidth": "230px", "overflow": "hidden", "textOverflow": "ellipsis", "border": "0", "borderBottom": "1px solid #ded6ca", "fontFamily": "Jost, Segoe UI, Arial, sans-serif", "color": "#28211e"},
+                    style_data_conditional=[{"if": {"filter_query": '{status_vaga} = "Fraudulenta"', "column_id": "status_vaga"}, "color": "#ad4035", "fontWeight": "700"}],
                 ),
                 html.Div(id="detalhe-vaga", className="record-detail"),
             ]),
@@ -288,19 +292,19 @@ def filter_from_chart(sector_click, country_click):
 def chart_layout(fig, height=320):
     fig.update_layout(
         template="plotly_white", height=height, margin=dict(l=12, r=20, t=15, b=35),
-        font=dict(family="Inter, Segoe UI, Arial, sans-serif", color="#64748b", size=11),
+        font=dict(family="Jost, Segoe UI, Arial, sans-serif", color="#68594f", size=11),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         legend=dict(title=None, orientation="h", yanchor="bottom", y=1.02, x=0),
-        hoverlabel=dict(bgcolor="white", font_size=12),
+        hoverlabel=dict(bgcolor="#f4efe5", bordercolor="#b8ac9b", font_size=13),
     )
     fig.update_xaxes(showgrid=False, zeroline=False, automargin=True)
-    fig.update_yaxes(gridcolor="#edf1f5", zeroline=False, automargin=True)
+    fig.update_yaxes(gridcolor="#ded6ca", zeroline=False, automargin=True)
     return fig
 
 
 def empty_chart(message="Nenhum resultado neste recorte"):
     fig = go.Figure()
-    fig.add_annotation(text=message, x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False, font=dict(color="#7c8a9b", size=14))
+    fig.add_annotation(text=message, x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False, font=dict(color="#68594f", size=14))
     fig.update_xaxes(visible=False)
     fig.update_yaxes(visible=False)
     return chart_layout(fig)
@@ -346,14 +350,14 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     else:
         fig_sectors = px.scatter(
             plotted, x="taxa", y="industry_clean", size="total", size_max=28,
-            custom_data=["fraudes", "total"], color_discrete_sequence=["#368c91"],
+            custom_data=["fraudes", "total"], color_discrete_sequence=["#758361"],
             labels={"taxa": "Taxa de fraude", "industry_clean": ""},
         )
         fig_sectors.update_traces(cliponaxis=False, marker=dict(opacity=.85, line=dict(width=1, color="white")),
                                  hovertemplate="<b>%{y}</b><br>Taxa: %{x:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>")
         chart_layout(fig_sectors, 390)
-        fig_sectors.add_vline(x=rate, line_dash="dot", line_color="#b28355")
-        fig_sectors.update_xaxes(showgrid=True, gridcolor="#edf1f5", ticksuffix="%",
+        fig_sectors.add_vline(x=rate, line_dash="dot", line_color="#c4513f")
+        fig_sectors.update_xaxes(showgrid=True, gridcolor="#ded6ca", ticksuffix="%",
                                  range=[0, max(float(plotted["taxa"].max()), rate, 5) * 1.15])
         fig_sectors.update_yaxes(showgrid=False, ticklabelstandoff=18, categoryorder="array", categoryarray=plotted["industry_clean"].tolist(),
                                  tickmode="array", tickvals=plotted["industry_clean"].tolist(),
@@ -381,7 +385,7 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     fig_logo = go.Figure(go.Heatmap(
         z=z, x=["Com logo", "Sem logo"], y=["Não remoto", "Remoto"], customdata=custom,
         text=text, texttemplate="%{text}", textfont=dict(size=12), hoverongaps=False,
-        zmin=0, zmax=100, colorscale=[[0, "#edf7f3"], [.3, "#86bdb1"], [1, "#275f64"]],
+        zmin=0, zmax=100, colorscale=[[0, "#eee7dc"], [.3, "#e2a48c"], [1, "#a3362c"]],
         colorbar=dict(title="%", thickness=10, len=.7), xgap=5, ygap=5,
         hovertemplate="%{x} · %{y}<br>Taxa: %{z:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>",
     ))
@@ -389,11 +393,11 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     fig_logo.update_yaxes(showgrid=False, autorange="reversed")
     fig_logo.update_layout(margin=dict(l=10, r=10, t=20, b=35))
 
-    colors = {"Real": "#368c91", "Fraudulenta": "#dd7c88"}
+    colors = {"Real": "#758361", "Fraudulenta": "#ce5845"}
     contracts = df.groupby("employment_type_clean", as_index=False).size().sort_values(["size", "employment_type_clean"], ascending=[False, True])
     fig_contracts = go.Figure(go.Pie(
         labels=contracts["employment_type_clean"], values=contracts["size"], hole=.64, sort=False,
-        marker=dict(colors=["#368c91", "#9bcfbe", "#8b80b1", "#d9ae6f", "#7094b2", "#c9828e", "#b4bbc3"]),
+        marker=dict(colors=["#758361", "#c0c7a8", "#a49ab3", "#d6b16d", "#8eacb0", "#ce8975", "#b7ad9e"]),
         textinfo="percent", textposition="inside", insidetextorientation="horizontal",
         hovertemplate="<b>%{label}</b><br>%{value} anúncios · %{percent}<extra></extra>",
     ))
@@ -401,7 +405,7 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     fig_contracts.update_layout(legend=dict(orientation="h", yanchor="top", y=-.08, x=0, font_size=10),
                                 margin=dict(l=5, r=5, t=5, b=70), uniformtext_minsize=10, uniformtext_mode="hide")
     fig_contracts.add_annotation(text=f"<b>{format_count(total)}</b><br>anúncios", x=.5, y=.5,
-                                 showarrow=False, font=dict(size=15, color="#1b303b"))
+                                 showarrow=False, font=dict(size=15, color="#28211e"))
 
     top_countries = df["pais"].value_counts().head(10).index
     countries = df[df["pais"].isin(top_countries)].groupby(["pais", "status_vaga"], as_index=False).size()
