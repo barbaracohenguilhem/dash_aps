@@ -104,7 +104,7 @@ def graph_card(eyebrow, title, description, graph_id, wide=False, controls=None)
             *([controls] if controls is not None else []),
             dcc.Graph(
                 id=graph_id, config={"displayModeBar": "hover", "displaylogo": False, "responsive": True,
-                                     "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d"],
+                                     "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d", "sendChartToCloud", "sendDataToCloud"],
                                      "toImageButtonOptions": {"filename": graph_id, "scale": 2}},
                 style={"height": "390px" if graph_id in ("g-setores", "g-logo-fraude") else "330px"},
             ),
@@ -199,7 +199,7 @@ dash_app.layout = html.Div(className="app-shell", children=[
                                    {"label": "Maior volume", "value": "total"}, {"label": "Maior taxa de fraude", "value": "taxa"},
                                ], "Maior volume", multi=False, value="total")),
                                field("Amostra mínima por setor", dropdown("sector-min", [
-                                   {"label": f"{n} anúncios", "value": n} for n in [1, 30, 100, 500]
+                                   {"label": f"{n} anúncio" + ("s" if n != 1 else ""), "value": n} for n in [1, 30, 100, 500]
                                ], "30 anúncios", multi=False, value=30)),
                            ])),
                 graph_card("02  /  MAPA DE CALOR", "Logo × trabalho remoto",
@@ -342,7 +342,7 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     ranked = eligible.sort_values([sector_order, "industry_clean"], ascending=[False, True]).head(10)
     plotted = ranked.iloc[::-1]
     if plotted.empty:
-        fig_sectors = empty_chart(f"Nenhum setor com pelo menos {sector_min} anúncios. Reduza a amostra mínima.")
+        fig_sectors = empty_chart(f"Nenhum setor com pelo menos<br>{sector_min} anúncios.<br>Reduza a amostra mínima.")
     else:
         fig_sectors = px.scatter(
             plotted, x="taxa", y="industry_clean", size="total", size_max=28,

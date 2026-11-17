@@ -141,6 +141,22 @@ class DashboardTest(unittest.TestCase):
             self.assertEqual(app.chart_filter_selection("g-paises", payload), (app.no_update, app.no_update))
         self.assertEqual(app.reset_filters(1)[-2:], (None, None))
 
+    def test_chart_click_http_callback_applies_only_triggered_dimension(self):
+        key = next(key for key in app.dash_app.callback_map if "f-setor.value@" in key)
+        client = app.server.test_client()
+        for chart, payload, expected in (
+            ("g-setores", {"points": [{"y": "Oil & Energy"}]}, {"f-setor": {"value": ["Oil & Energy"]}}),
+            ("g-paises", {"points": [{"x": "NZ"}]}, {"f-pais": {"value": ["NZ"]}}),
+        ):
+            response = client.post("/_dash-update-component", json={
+                "output": key, "outputs": [{"id": "f-setor", "property": "value"}, {"id": "f-pais", "property": "value"}],
+                "inputs": [{"id": name, "property": "clickData", "value": payload if name == chart else None}
+                           for name in ["g-setores", "g-paises"]],
+                "state": [], "changedPropIds": [f"{chart}.clickData"],
+            })
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json["response"], expected)
+
     def test_details_export_and_reset(self):
         detail = app.mostrar_detalhe_vaga([2])
         self.assertIn("#2", detail.children[0].children[0].children[1].children)
