@@ -13,6 +13,9 @@ from dash import ALL, ClientsideFunction, Dash, Input, Output, State, ctx, dash_
 from flask import Response, abort, request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Immutable workbook link on deployments; main is the local-development fallback.
+WORKBOOK_REF = os.environ.get("VERCEL_GIT_COMMIT_SHA") or "main"
+WORKBOOK_URL = f"https://github.com/barbaracohenguilhem/dash_aps/blob/{quote(WORKBOOK_REF, safe='')}/Jobs_Database.xlsx?raw=true"
 DB_PATH = os.path.join(BASE_DIR, "data", "jobs_database.db")
 DIMENSIONS = ["pais", "industry_clean", "employment_type_clean", "experience_clean", "education_clean"]
 TABLE_COLS = [
@@ -145,6 +148,28 @@ def graph_card(eyebrow, title, description, graph_id, wide=False, controls=None)
     )
 
 
+def format_count(value: int) -> str:
+    return f"{value:,}".replace(",", ".")
+
+
+def population_mosaic():
+    """100 equal-area tiles; fractional tile preserves the exact historical share."""
+    share = 100 * OPTS["frauds"] / OPTS["total"] if OPTS["total"] else 0
+    return html.Div([
+        html.Div(className="population-tiles", **{"aria-hidden": "true"}, children=[
+            html.Span(style={"--fraud-share": f"{max(0, min(1, share - i)) * 100}%"}) for i in range(100)
+        ]),
+        html.Div([html.Span("● Real", className="mosaic-real"), html.Span("● Fraudulenta", className="mosaic-fraud")], className="mosaic-legend"),
+        html.P([html.Strong(f"{format_count(OPTS['frauds'])} de {format_count(OPTS['total'])}"),
+                " anúncios receberam o rótulo de fraude. Cada bloco = 1% da base; o bloco parcial preserva a proporção exata."], className="mosaic-caption"),
+    ], className="population-art", role="img", **{"aria-label": f"Base histórica: {OPTS['total']} anúncios, {OPTS['frauds']} rotulados como fraude, {share:.2f} por cento."})
+
+
+def story_graph(id, height):
+    return dcc.Graph(id=id, config={"displaylogo": False, "responsive": True,
+                                    "modeBarButtonsToRemove": ["lasso2d", "select2d"]}, style={"height": f"{height}px"})
+
+
 dash_app.layout = html.Div(className="app-shell", children=[
     html.Header(className="topbar", children=[
         html.Div(className="brand", children=[
@@ -153,8 +178,9 @@ dash_app.layout = html.Div(className="app-shell", children=[
         ]),
         html.Nav(className="topbar-nav", **{"aria-label": "Navegação principal"}, children=[
             html.A("Visão geral", href="#visao-geral"),
-            html.A("Análises", href="#analises"),
+            html.A("Percurso", href="#percurso"),
             html.A("Explorador", href="#explorador"),
+            html.A("Excel", href="#excel"),
         ]),
         html.Div(className="topbar-right", children=[
             html.Span("BASE HISTÓRICA", className="data-badge"),
@@ -164,12 +190,12 @@ dash_app.layout = html.Div(className="app-shell", children=[
     html.Main(id="visao-geral", tabIndex=-1, className="main-content", children=[
         html.Div(className="page-intro", children=[
             html.Div(className="intro-story", children=[
-                html.Div("DADOS QUE REVELAM PADRÕES", className="eyebrow"),
-                html.H1(["Um novo olhar", html.Br(), "sobre o mercado", html.Br(), html.Span("de trabalho.")]),
-                html.P("Explore os anúncios e compare os rótulos de fraude em cada recorte.", className="intro-copy"),
-                html.A(["Explore os dados", html.Span(" ↓", **{"aria-hidden": "true"})], href="#recorte", className="explore-link"),
+                html.Div("UM ARQUIVO / DEZ MIL HISTÓRIAS", className="eyebrow"),
+                html.H1(["Uma vaga.", html.Br(), "Muitas pistas.", html.Br(), html.Span("Nenhuma certeza.")]),
+                html.P("O que um anúncio revela — e o que ele não pode provar? Entre no arquivo e descubra os padrões por trás dos rótulos.", className="intro-copy"),
+                html.A(["Siga as pistas", html.Span(" ↓", **{"aria-hidden": "true"})], href="#ponto-de-partida", className="explore-link"),
             ]),
-            html.Img(src=dash_app.get_asset_url("field-notes.svg"), alt="", className="intro-illustration", **{"aria-hidden": "true"}),
+            population_mosaic(),
             html.Div(className="intro-actions", children=[
                 html.Div("OBSERVAR / COMPARAR / INVESTIGAR", className="intro-caption"),
                 html.Button("Limpar filtros", id="btn-reset", n_clicks=0, className="button button-secondary"),
@@ -188,8 +214,19 @@ dash_app.layout = html.Div(className="app-shell", children=[
             html.A([html.Span(number), label], href=f"#{target}", **{"data-story-target": target})
             for number, label, target in [
                 ("01", "Recorte", "recorte"), ("02", "Panorama", "panorama"),
-                ("03", "Conexões", "analises"), ("04", "Anúncios", "explorador"),
+                ("03", "Percurso", "percurso"), ("04", "Anúncios", "caderno"),
             ]
+        ]),
+        html.Section(id="ponto-de-partida", tabIndex=-1, className="opening-chapter", children=[
+            html.Div("01 / ANTES DE PROCURAR UM PADRÃO", className="eyebrow"),
+            html.Div(className="opening-columns", children=[
+                html.H2("O raro chama atenção.\nO contexto muda tudo."),
+                html.Div([
+                    html.P(f"Só {BASE_RATE:.2f}% dos anúncios desta base têm rótulo de fraude. Isso torna as contagens e os denominadores tão importantes quanto as cores de um gráfico."),
+                    html.P("Vamos seguir três passos: atravessar as combinações de sinais, comparar a extensão dos textos e voltar aos anúncios reais. Não há pontuação de risco escondida neste percurso."),
+                    html.A("Escolher uma pergunta ↓", href="#recorte", className="back-link"),
+                ]),
+            ]),
         ]),
         html.Section(id="recorte", tabIndex=-1, className="filter-panel panel", children=[
             html.Div(className="section-heading", children=[
@@ -225,6 +262,15 @@ dash_app.layout = html.Div(className="app-shell", children=[
                     ), "range-field"),
                 ]),
             ]),
+            html.Div(className="question-presets", children=[
+                html.Div([html.Strong("Comece com uma pergunta"),
+                          html.P("Cada atalho substitui os filtros atuais; depois, refine seu recorte.")]),
+                html.Div(className="preset-buttons", children=[
+                    html.Button("Como são as vagas sem logo?", id="preset-logo", n_clicks=0, className="question-button"),
+                    html.Button("O que muda no trabalho remoto?", id="preset-remoto", n_clicks=0, className="question-button"),
+                    html.Button("Quais anúncios receberam rótulo de fraude?", id="preset-fraude", n_clicks=0, className="question-button"),
+                ]),
+            ]),
             story_links("Seu recorte está pronto. Siga o fio.", [("Ler o panorama ↓", "panorama")]),
         ]),
         dcc.Loading(type="circle", children=html.Div([
@@ -234,7 +280,7 @@ dash_app.layout = html.Div(className="app-shell", children=[
             ]),
             html.Aside(className="selection-context", **{"aria-label": "Filtros que conectam a análise"}, children=[
                 html.Div(id="active-filters", role="status", **{"aria-live": "polite", "aria-atomic": "true"}),
-                html.P("Este recorte conecta indicadores, os quatro gráficos, anúncios e CSV. Remover um filtro atualiza todos eles; navegar entre blocos não altera sua seleção."),
+                html.P("Este recorte conecta indicadores, percurso, textos, atlas, anúncios e CSV. Remover um filtro atualiza todos eles; navegar entre blocos não altera sua seleção."),
                 html.Div(className="context-actions", children=[
                     html.A("Editar recorte ↑", href="#recorte"),
                     html.Button("Limpar todos os filtros", id="btn-reset-context", n_clicks=0, className="text-button"),
@@ -246,6 +292,37 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 ("Comparar setores ↓", "setores"), ("Cruzar sinais →", "sinais"),
                 ("Ver contratos →", "contratos"), ("Explorar países →", "paises"),
             ]),
+            html.Section(id="percurso", tabIndex=-1, className="story-chapter flow-chapter", children=[
+                html.Div(className="chapter-margin", children=[html.Span("I"), html.P("CRUZAR / NÃO CONCLUIR")]),
+                html.Div(className="chapter-content", children=[
+                    html.Div("03 / SEGUIR AS COMBINAÇÕES", className="eyebrow"),
+                    html.H2("Uma pista nunca vem sozinha."),
+                    html.P("Acompanhe os anúncios de logo → trabalho remoto → rótulo histórico. A largura de cada faixa é a quantidade de anúncios; nenhuma faixa representa uma causa.", className="section-note"),
+                    html.P("As duas primeiras etapas contam combinações agregadas; o diagrama não permite rastrear um anúncio individual de ponta a ponta. Os valores exatos de cada ligação aparecem ao passar o cursor.", className="method-note"),
+                    story_graph("g-percurso", 430),
+                    html.Div(id="flow-reading", role="status", className="story-reading"),
+                    html.Details(className="text-alternative", children=[html.Summary("Ler os números sem o gráfico"), html.Div(id="flow-table")]),
+                ]),
+            ]),
+            html.Section(id="textos", tabIndex=-1, className="story-chapter", children=[
+                html.Div(className="chapter-margin", children=[html.Span("II"), html.P("LER / ALÉM DO TAMANHO")]),
+                html.Div(className="chapter-content", children=[
+                    html.Div("04 / A FORMA DOS TEXTOS", className="eyebrow"),
+                    html.H2("Um texto longo inspira confiança?"),
+                    html.P("Compare as distribuições, não só uma média. Para cada tamanho no eixo horizontal, a curva mostra a porcentagem de anúncios com até esse número de caracteres. Cada rótulo tem seu próprio denominador.", className="section-note"),
+                    story_graph("g-textos", 360),
+                    html.Div(id="text-reading", role="status", className="story-reading"),
+                    html.P("Curvas próximas sugerem comprimentos parecidos; curvas diferentes não tornam o tamanho um detector de fraude. A comparação é descritiva e não controla setor, idioma ou país.", className="method-note"),
+                ]),
+            ]),
+            html.Section(id="caderno", tabIndex=-1, className="casebook", children=[
+                html.Div("05 / VOLTAR AO CONCRETO", className="eyebrow"),
+                html.H2("Não são só pontos. São anúncios."),
+                html.P("Um registro de cada rótulo disponível no recorte, escolhido pelo menor ID — não pelo texto mais convincente. Não são pares equivalentes nem exemplos representativos.", className="section-note"),
+                html.Div(id="casebook-records", className="casebook-grid"),
+            ]),
+            html.Details(className="atlas", children=[
+                html.Summary([html.Span("APROFUNDAR / ATLAS ANALÍTICO"), "Abrir setores, sinais, contratos e países"]),
             html.Div(id="analises", tabIndex=-1, className="connections-intro", children=[
                 html.Div("03 / CONECTAR", className="eyebrow"),
                 html.H2("Um recorte, quatro perspectivas"),
@@ -268,6 +345,7 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 graph_card("03  /  COMPOSIÇÃO", "Qual o perfil dos contratos?",
                            "Participação de cada contrato no recorte completo. Passe sobre uma fatia para ver a contagem; a legenda permite isolar categorias.", "g-contrato-exp"),
                 graph_card("04  /  GEOGRAFIA", "Países com mais anúncios", "Clique em uma barra para filtrar o país (ou use o filtro acima). Os rótulos são empilhados; a cobertura dos 10 maiores países aparece no resumo.", "g-paises", wide=True),
+            ]),
             ]),
             html.Section(id="explorador", tabIndex=-1, className="panel records-panel", children=[
                 html.Div(className="section-heading records-heading", children=[
@@ -303,13 +381,24 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 ]),
             ]),
         ])),
+        html.Section(id="excel", tabIndex=-1, className="workbook-panel", children=[
+            html.Div([
+                html.Div("05 / LEVAR COM VOCÊ", className="eyebrow"),
+                html.H2("A análise continua no Excel."),
+                html.P("A mesma base, em uma planilha independente: seis filtros combinados, indicadores e quatro gráficos nativos. Sem macros e sem conexão à internet.", className="section-note"),
+                html.A("↓ Baixar dashboard Excel", href=WORKBOOK_URL, className="button button-primary workbook-download"),
+                html.A("Baixar somente os dados (.xlsx)", href=WORKBOOK_URL.replace("Jobs_Database.xlsx", "Jobs_Data.xlsx"), className="back-link data-download"),
+                html.P("Arquivo completo da base histórica — não aplica os filtros desta página. Para levar somente seu recorte, use Exportar CSV no início.", className="workbook-scope"),
+            ]),
+            html.Ol(className="workbook-steps", children=[
+                html.Li([html.Span("01"), html.Div([html.Strong("Escolha na aba Dashboard"), html.P("País, setor, contrato, status, logo e trabalho remoto atualizam os indicadores e gráficos juntos.")])]),
+                html.Li([html.Span("02"), html.Div([html.Strong("Investigue a base completa"), html.P("Leia os textos e use os filtros da tabela. Eles são independentes das listas do Dashboard.")])]),
+                html.Li([html.Span("03"), html.Div([html.Strong("Leve a interpretação junto"), html.P("A aba Leia-me explica taxas, recortes e limites. Abra no Microsoft Excel com cálculo automático.")])]),
+            ]),
+        ]),
         html.Footer("Radar de vagas · Uma ferramenta de exploração, não um classificador de fraude.", className="footer"),
     ]),
 ])
-
-
-def format_count(value: int) -> str:
-    return f"{value:,}".replace(",", ".")
 
 
 def make_kpi_card(title: str, value: str, subtitle: str, accent: str) -> html.Div:
@@ -331,6 +420,36 @@ def make_kpi_card(title: str, value: str, subtitle: str, accent: str) -> html.Di
 )
 def reset_filters(_n, _context_n=None):
     return "Todas", "", "Todos", "Todos", [], [], [], [], [], [0, MAX_DESC_LEN], "", "total", 30, None, None
+
+
+PRESET_FILTERS = {
+    "preset-logo": {"f-logo": "Não"},
+    "preset-remoto": {"f-remoto": "Sim"},
+    "preset-fraude": {"f-status": "Fraudulenta"},
+}
+
+
+def preset_values(preset_id):
+    values = list(reset_filters(1))
+    order = ["f-status", "f-busca", "f-logo", "f-remoto", "f-pais", "f-setor", "f-contrato", "f-exp", "f-edu"]
+    for field_id, value in PRESET_FILTERS[preset_id].items():
+        values[order.index(field_id)] = value
+    return tuple(values)
+
+
+@dash_app.callback(
+    Output("f-status", "value", allow_duplicate=True), Output("f-busca", "value", allow_duplicate=True),
+    Output("f-logo", "value", allow_duplicate=True), Output("f-remoto", "value", allow_duplicate=True),
+    Output("f-pais", "value", allow_duplicate=True), Output("f-setor", "value", allow_duplicate=True),
+    Output("f-contrato", "value", allow_duplicate=True), Output("f-exp", "value", allow_duplicate=True),
+    Output("f-edu", "value", allow_duplicate=True), Output("f-tam", "value", allow_duplicate=True),
+    Output("tabela-vagas", "filter_query", allow_duplicate=True), Output("sector-order", "value", allow_duplicate=True),
+    Output("sector-min", "value", allow_duplicate=True), Output("g-setores", "clickData", allow_duplicate=True),
+    Output("g-paises", "clickData", allow_duplicate=True),
+    *[Input(preset, "n_clicks") for preset in PRESET_FILTERS], prevent_initial_call=True,
+)
+def explore_question(*_clicks):
+    return preset_values(ctx.triggered_id)
 
 
 def chart_filter_selection(chart_id, click_data):
@@ -586,6 +705,98 @@ def mostrar_detalhe_vaga(selected_ids):
             ]),
         ]),
     ])
+
+
+def flow_figure(df):
+    if df.empty:
+        return empty_chart(), [], "Nenhum anúncio neste recorte. Limpe ou altere os filtros."
+    nodes = ["Com logo", "Sem logo", "Não remoto", "Remoto", "Real", "Fraudulenta"]
+    sources, targets, counts = [], [], []
+    rows = []
+    for left, right, left_map, right_map in [
+        ("tem_logo", "remoto", {"Sim": 0, "Não": 1}, {"Não": 2, "Sim": 3}),
+        ("remoto", "status_vaga", {"Não": 2, "Sim": 3}, {"Real": 4, "Fraudulenta": 5}),
+    ]:
+        for (a, b), count in df.groupby([left, right]).size().items():
+            source, target = left_map[a], right_map[b]
+            sources.append(source)
+            targets.append(target)
+            counts.append(int(count))
+            rows.append(html.Tr([html.Td(nodes[source]), html.Td(nodes[target]), html.Td(format_count(int(count)))]))
+    chart = go.Figure(go.Sankey(
+        arrangement="snap", valueformat=",d", valuesuffix=" anúncios",
+        node=dict(label=nodes, pad=24, thickness=14, color=["#758361", "#b5aa99", "#94849c", "#c49a65", "#758361", "#ad4035"],
+                  line=dict(color="#f4efe5", width=1)),
+        link=dict(source=sources, target=targets, value=counts,
+                  color=["rgba(173,64,53,.38)" if target == 5 else "rgba(117,131,97,.25)" for target in targets],
+                  hovertemplate="%{source.label} → %{target.label}<br>%{value:,d} anúncios<extra></extra>"),
+    ))
+    chart_layout(chart, 430)
+    chart.update_layout(margin=dict(l=10, r=12, t=24, b=18), font_size=12)
+    table = html.Table([html.Caption("Ligações agregadas no recorte"),
+                        html.Thead(html.Tr([html.Th("De"), html.Th("Para"), html.Th("Anúncios")])), html.Tbody(rows)])
+    return chart, table, f"{format_count(len(df))} anúncios em cada etapa. As duas transições contam a mesma população: não some as faixas de etapas diferentes."
+
+
+def text_distribution(df):
+    if df.empty:
+        return empty_chart(), "Não há textos para comparar neste recorte."
+    fig = go.Figure()
+    readings = []
+    for label, color in [("Real", "#65734f"), ("Fraudulenta", "#ad4035")]:
+        values = df.loc[df.status_vaga == label, "tamanho_descricao"].sort_values()
+        if values.empty:
+            readings.append(f"{label}: sem anúncios no recorte.")
+            continue
+        frequencies = values.value_counts().sort_index()
+        cumulative = 100 * frequencies.cumsum() / len(values)
+        x = [0, *frequencies.index.tolist()]
+        y = [0, *cumulative.tolist()]
+        fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name=f"{label} · n={format_count(len(values))}",
+                                 line=dict(color=color, width=2.5, shape="hv", dash="solid" if label == "Real" else "dash"),
+                                 hovertemplate=f"{label}<br>Até %{{x:,d}} caracteres: %{{y:.1f}}%<extra></extra>"))
+        readings.append(f"{label}: mediana de {format_count(round(float(values.median())))} caracteres, n={format_count(len(values))}.")
+    chart_layout(fig, 360)
+    fig.update_xaxes(title="Caracteres na descrição", rangemode="tozero", showgrid=True, gridcolor="#ded6ca")
+    fig.update_yaxes(title="Anúncios com até esse tamanho", range=[0, 102], ticksuffix="%")
+    fig.update_layout(margin=dict(l=8, r=12, t=48, b=42), legend=dict(y=1.08))
+    return fig, " ".join(readings)
+
+
+def casebook(df):
+    if df.empty:
+        return html.P("Nenhum anúncio neste recorte. Tente outra pergunta.")
+    ids = [int(group.id_vaga.min()) for _, group in df.groupby("status_vaga", sort=True)]
+    with closing(get_db_connection()) as conn:
+        records = pd.read_sql_query(f"SELECT * FROM vagas WHERE id_vaga IN ({','.join('?' for _ in ids)}) ORDER BY status_vaga DESC", conn, params=ids)
+    cards = []
+    for r in records.fillna("").to_dict("records"):
+        cards.append(html.Article(className="case-card", children=[
+            html.Div([html.Span(f"ARQUIVO / {r['id_vaga']:05d}", className="eyebrow"),
+                      html.Span(r["status_vaga"], className="status-pill " + ("status-fraud" if r["fraude_bin"] else "status-real"))], className="case-label"),
+            html.H3(r["title"]),
+            html.P(f"{r['pais']} · {r['industry_clean']} · {r['employment_type_clean']}", className="detail-meta"),
+            html.Dl([html.Dt("Logo"), html.Dd(r["tem_logo"]), html.Dt("Remoto"), html.Dd(r["remoto"]),
+                     html.Dt("Caracteres"), html.Dd(format_count(r["tamanho_descricao"]))]),
+            html.P(r["description"][:360] + ("…" if len(r["description"]) > 360 else ""), className="case-excerpt"),
+            html.Details(children=[html.Summary(f"Ler o anúncio completo #{r['id_vaga']}"),
+                                   *[html.Div([html.H4(label), html.P(r[key] or "Não informado.")])
+                                     for key, label in [("description", "Descrição"), ("requirements", "Requisitos"),
+                                                        ("company_profile", "Empresa"), ("benefits", "Benefícios")]]]),
+        ]))
+    return cards
+
+
+@dash_app.callback(
+    Output("g-percurso", "figure"), Output("flow-table", "children"), Output("flow-reading", "children"),
+    Output("g-textos", "figure"), Output("text-reading", "children"), Output("casebook-records", "children"),
+    *[Input(id, "value") for id in FILTER_IDS],
+)
+def update_story(*filters):
+    df = query_vagas(*filters)
+    flow, table, reading = flow_figure(df)
+    distribution, explanation = text_distribution(df)
+    return flow, table, reading, distribution, explanation, casebook(df)
 
 
 EXPORT_PAGE_SIZE = 100

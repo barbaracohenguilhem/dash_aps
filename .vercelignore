@@ -11,3 +11,7 @@ Jobs_Database.xlsx
 *.zip
 
 tests/browser/
+requirements-dev.txt
+.github/
+.pytest_cache/
+Analise.ipynb

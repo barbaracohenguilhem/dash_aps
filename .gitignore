@@ -5,3 +5,5 @@ __pycache__/
 .vercel/
 
 node_modules/
+.pytest_cache/
+mise.local.toml

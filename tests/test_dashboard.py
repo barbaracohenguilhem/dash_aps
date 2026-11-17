@@ -47,6 +47,19 @@ class DashboardTest(unittest.TestCase):
             with client.get(path) as response:
                 self.assertEqual(response.status_code, 200, path)
 
+    def test_guided_questions_replace_previous_filters_and_keep_reset_semantics(self):
+        for preset, field_id, value in [("preset-logo", "f-logo", "Não"),
+                                         ("preset-remoto", "f-remoto", "Sim"),
+                                         ("preset-fraude", "f-status", "Fraudulenta")]:
+            result = app.preset_values(preset)
+            reset = list(app.reset_filters(1))
+            position = {"f-status": 0, "f-logo": 2, "f-remoto": 3}[field_id]
+            self.assertEqual(result[position], value)
+            reset[position] = value
+            self.assertEqual(result, tuple(reset))
+        self.assertIn("/Jobs_Database.xlsx?raw=true", app.WORKBOOK_URL)
+        self.assertTrue(app.WORKBOOK_URL.startswith("https://github.com/barbaracohenguilhem/dash_aps/blob/"))
+
     def test_document_declares_brazilian_portuguese(self):
         with app.server.test_client().get("/") as response:
             self.assertIn('<html lang="pt-BR">', response.get_data(as_text=True))
@@ -202,7 +215,8 @@ class DashboardTest(unittest.TestCase):
         self.assertEqual(app.reset_filters(1)[-2:], (None, None))
 
     def test_chart_click_http_callback_applies_only_triggered_dimension(self):
-        key = next(key for key in app.dash_app.callback_map if "f-setor.value@" in key)
+        key = next(key for key, callback in app.dash_app.callback_map.items()
+                   if callback.get("callback") and callback["callback"].__name__ == "filter_from_chart")
         client = app.server.test_client()
         for chart, payload, expected in (
             ("g-setores", {"points": [{"y": "Oil & Energy"}]}, {"f-setor": {"value": ["Oil & Energy"]}}),

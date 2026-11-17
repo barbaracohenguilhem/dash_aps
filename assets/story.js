@@ -41,6 +41,24 @@
     observer.observe(document.documentElement, {childList: true, subtree: true});
   }
 
+  // Hash links into the optional atlas must reveal it before scrolling.
+  document.addEventListener("click", function (event) {
+    const anchor = event.target.closest('a[href^="#"]');
+    if (!anchor) return;
+    const target = document.getElementById(anchor.getAttribute("href").slice(1));
+    if (!target) return;
+    let parent = target.parentElement;
+    while (parent) {
+      if (parent.tagName === "DETAILS") parent.open = true;
+      parent = parent.parentElement;
+    }
+  });
+  document.addEventListener("toggle", function (event) {
+    if (event.target.matches("details.atlas") && event.target.open) {
+      requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+    }
+  }, true);
+
   document.addEventListener("click", function (event) {
     const button = event.target.closest("[data-table-scroll]");
     if (!button) return;
