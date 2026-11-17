@@ -355,7 +355,7 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
         fig_sectors.add_vline(x=rate, line_dash="dot", line_color="#b28355")
         fig_sectors.update_xaxes(showgrid=True, gridcolor="#edf1f5", ticksuffix="%",
                                  range=[0, max(float(plotted["taxa"].max()), rate, 5) * 1.15])
-        fig_sectors.update_yaxes(showgrid=False, categoryorder="array", categoryarray=plotted["industry_clean"].tolist(),
+        fig_sectors.update_yaxes(showgrid=False, ticklabelstandoff=18, categoryorder="array", categoryarray=plotted["industry_clean"].tolist(),
                                  tickmode="array", tickvals=plotted["industry_clean"].tolist(),
                                  ticktext=[name if len(name) <= 19 else name[:18] + "…" for name in plotted["industry_clean"]])
 
