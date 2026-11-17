@@ -9,7 +9,7 @@ from urllib.parse import quote
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import ClientsideFunction, Dash, Input, Output, State, dash_table, dcc, html
+from dash import ClientsideFunction, Dash, Input, Output, State, ctx, dash_table, dcc, html, no_update
 from flask import Response, abort, request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -95,14 +95,17 @@ def dropdown(id, options, placeholder, multi=True, value=None):
     return dcc.Dropdown(id=id, options=options, value=value, multi=multi, clearable=multi, placeholder=placeholder)
 
 
-def graph_card(eyebrow, title, description, graph_id, wide=False):
+def graph_card(eyebrow, title, description, graph_id, wide=False, controls=None):
     return html.Section(
         [
             html.Div(eyebrow, className="eyebrow"),
             html.H3(title),
             html.P(description, className="card-description"),
+            *([controls] if controls is not None else []),
             dcc.Graph(
-                id=graph_id, config={"displayModeBar": False, "responsive": True},
+                id=graph_id, config={"displayModeBar": "hover", "displaylogo": False, "responsive": True,
+                                     "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d", "sendChartToCloud", "sendDataToCloud"],
+                                     "toImageButtonOptions": {"filename": graph_id, "scale": 2}},
                 style={"height": "390px" if graph_id in ("g-setores", "g-logo-fraude") else "330px"},
             ),
         ],
@@ -187,11 +190,23 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 html.Div(id="result-context", className="result-context", role="status"),
             ]),
             html.Div(id="kpi-row", className="kpi-grid"),
+            html.Section(id="analysis-summary", className="analysis-summary", **{"aria-label": "Resumo do recorte", "aria-live": "polite"}),
             html.Div(id="analises", className="charts-grid", children=[
-                graph_card("01  /  SETORES", "Como a taxa varia por setor?", "Taxa de fraude nos dez maiores setores por volume. O número entre parênteses é o total de anúncios.", "g-setores", wide=True),
-                graph_card("02  /  CARACTERÍSTICAS", "Logo e modalidade", "Taxa de fraude e tamanho da amostra em cada grupo. Ausência de logo não é prova de fraude.", "g-logo-fraude"),
-                graph_card("03  /  CONTRATOS", "Distribuição por contrato", "Quantidade de anúncios por tipo de contrato e rótulo.", "g-contrato-exp"),
-                graph_card("04  /  GEOGRAFIA", "Países com mais anúncios", "Dez maiores grupos do recorte, com contagem de rótulos.", "g-paises", wide=True),
+                graph_card("01  /  COMPARAÇÃO", "Onde vale aprofundar a análise?",
+                           "Clique em um ponto para filtrar o setor (ou use o filtro acima). Tamanho = volume; linha = taxa do recorte. Os dois controles abaixo afetam só este gráfico.",
+                           "g-setores", wide=True, controls=html.Div(className="chart-controls", children=[
+                               field("Ordenar setores por", dropdown("sector-order", [
+                                   {"label": "Maior volume", "value": "total"}, {"label": "Maior taxa de fraude", "value": "taxa"},
+                               ], "Maior volume", multi=False, value="total")),
+                               field("Amostra mínima por setor", dropdown("sector-min", [
+                                   {"label": f"{n} anúncio" + ("s" if n != 1 else ""), "value": n} for n in [1, 30, 100, 500]
+                               ], "30 anúncios", multi=False, value=30)),
+                           ])),
+                graph_card("02  /  MAPA DE CALOR", "Logo × trabalho remoto",
+                           "Cor = taxa de fraude; n = anúncios no grupo. Células vazias não têm dados. Ausência de logo não comprova fraude.", "g-logo-fraude"),
+                graph_card("03  /  COMPOSIÇÃO", "Qual o perfil dos contratos?",
+                           "Participação de cada contrato no recorte completo. Passe sobre uma fatia para ver a contagem; a legenda permite isolar categorias.", "g-contrato-exp"),
+                graph_card("04  /  GEOGRAFIA", "Países com mais anúncios", "Clique em uma barra para filtrar o país (ou use o filtro acima). Os rótulos são empilhados; a cobertura dos 10 maiores países aparece no resumo.", "g-paises", wide=True),
             ]),
             html.Section(id="explorador", className="panel records-panel", children=[
                 html.Div(className="section-heading records-heading", children=[
@@ -239,10 +254,35 @@ def make_kpi_card(title: str, value: str, subtitle: str, accent: str) -> html.Di
     Output("f-remoto", "value"), Output("f-pais", "value"), Output("f-setor", "value"),
     Output("f-contrato", "value"), Output("f-exp", "value"), Output("f-edu", "value"),
     Output("f-tam", "value"), Output("tabela-vagas", "filter_query"),
+    Output("sector-order", "value"), Output("sector-min", "value"),
+    Output("g-setores", "clickData"), Output("g-paises", "clickData"),
     Input("btn-reset", "n_clicks"), prevent_initial_call=True,
 )
 def reset_filters(_n):
-    return "Todas", "", "Todos", "Todos", [], [], [], [], [], [0, MAX_DESC_LEN], ""
+    return "Todas", "", "Todos", "Todos", [], [], [], [], [], [0, MAX_DESC_LEN], "", "total", 30, None, None
+
+
+def chart_filter_selection(chart_id, click_data):
+    if not click_data or not click_data.get("points"):
+        return no_update, no_update
+    point = click_data["points"][0]
+    if chart_id == "g-setores":
+        value = point.get("y")
+        if value in {option["value"] for option in OPTS["industry_clean"]}:
+            return [value], no_update
+    elif chart_id == "g-paises":
+        value = point.get("x")
+        if value in {option["value"] for option in OPTS["pais"]}:
+            return no_update, [value]
+    return no_update, no_update
+
+
+@dash_app.callback(
+    Output("f-setor", "value", allow_duplicate=True), Output("f-pais", "value", allow_duplicate=True),
+    Input("g-setores", "clickData"), Input("g-paises", "clickData"), prevent_initial_call=True,
+)
+def filter_from_chart(sector_click, country_click):
+    return chart_filter_selection(ctx.triggered_id, sector_click if ctx.triggered_id == "g-setores" else country_click)
 
 
 def chart_layout(fig, height=320):
@@ -258,9 +298,9 @@ def chart_layout(fig, height=320):
     return fig
 
 
-def empty_chart():
+def empty_chart(message="Nenhum resultado neste recorte"):
     fig = go.Figure()
-    fig.add_annotation(text="Nenhum resultado neste recorte", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False, font=dict(color="#7c8a9b", size=14))
+    fig.add_annotation(text=message, x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False, font=dict(color="#7c8a9b", size=14))
     fig.update_xaxes(visible=False)
     fig.update_yaxes(visible=False)
     return chart_layout(fig)
@@ -271,11 +311,13 @@ def empty_chart():
     Output("g-setores", "figure"), Output("g-logo-fraude", "figure"),
     Output("g-contrato-exp", "figure"), Output("g-paises", "figure"),
     Output("tabela-vagas", "data"), Output("tabela-vagas", "selected_rows"), Output("tabela-vagas", "page_current"),
+    Output("analysis-summary", "children"),
     Input("f-status", "value"), Input("f-pais", "value"), Input("f-setor", "value"),
     Input("f-contrato", "value"), Input("f-exp", "value"), Input("f-edu", "value"),
     Input("f-logo", "value"), Input("f-remoto", "value"), Input("f-busca", "value"), Input("f-tam", "value"),
+    Input("sector-order", "value"), Input("sector-min", "value"),
 )
-def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remoto, busca, tam_range):
+def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remoto, busca, tam_range, sector_order="total", sector_min=30):
     df = query_vagas(status, paises, setores, contratos, exps, edus, logo, remoto, busca, tam_range)
     total = len(df)
     frauds = int(df["fraude_bin"].sum())
@@ -292,44 +334,74 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
         make_kpi_card("Sem logo", f"{no_logo / total * 100:.1f}%" if total else "—", f"{format_count(no_logo)} anúncios no recorte", "amber"),
     ]
     if not total:
-        return context, kpis, empty_chart(), empty_chart(), empty_chart(), empty_chart(), [], [], 0
+        return context, kpis, empty_chart(), empty_chart(), empty_chart(), empty_chart(), [], [], 0, html.P("Nenhum anúncio encontrado. Altere a busca ou use Limpar filtros.")
 
-    top = df["industry_clean"].value_counts().head(10).index
-    sectors = df[df["industry_clean"].isin(top)].groupby("industry_clean", as_index=False).agg(total=("id_vaga", "size"), fraudes=("fraude_bin", "sum"))
+    sectors = df.groupby("industry_clean", as_index=False).agg(total=("id_vaga", "size"), fraudes=("fraude_bin", "sum"))
     sectors["taxa"] = 100 * sectors["fraudes"] / sectors["total"]
-    sectors = sectors.sort_values("total", ascending=True)
-    sectors["label"] = sectors.apply(lambda row: f"{row['taxa']:.1f}%  (n={format_count(int(row['total']))})", axis=1)
-    fig_sectors = px.bar(sectors, x="taxa", y="industry_clean", orientation="h", text="label",
-                         custom_data=["fraudes", "total"],
-                         labels={"taxa": "Taxa de fraude", "industry_clean": ""}, color_discrete_sequence=["#368c91"])
-    fig_sectors.update_traces(textposition="outside", cliponaxis=False, hovertemplate="<b>%{y}</b><br>Taxa: %{x:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>")
-    chart_layout(fig_sectors, 390)
-    fig_sectors.update_xaxes(showgrid=True, gridcolor="#edf1f5", range=[0, max(sectors["taxa"].max() * 1.7, 5)], ticksuffix="%")
-    fig_sectors.update_yaxes(showgrid=False, categoryorder="array", categoryarray=sectors["industry_clean"].tolist(),
-                             tickmode="array", tickvals=sectors["industry_clean"].tolist(),
-                             ticktext=[name if len(name) <= 19 else name[:18] + "…" for name in sectors["industry_clean"]])
+    eligible = sectors[sectors["total"] >= sector_min]
+    ranked = eligible.sort_values([sector_order, "industry_clean"], ascending=[False, True]).head(10)
+    plotted = ranked.iloc[::-1]
+    if plotted.empty:
+        fig_sectors = empty_chart(f"Nenhum setor com pelo menos<br>{sector_min} anúncios.<br>Reduza a amostra mínima.")
+    else:
+        fig_sectors = px.scatter(
+            plotted, x="taxa", y="industry_clean", size="total", size_max=28,
+            custom_data=["fraudes", "total"], color_discrete_sequence=["#368c91"],
+            labels={"taxa": "Taxa de fraude", "industry_clean": ""},
+        )
+        fig_sectors.update_traces(cliponaxis=False, marker=dict(opacity=.85, line=dict(width=1, color="white")),
+                                 hovertemplate="<b>%{y}</b><br>Taxa: %{x:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>")
+        chart_layout(fig_sectors, 390)
+        fig_sectors.add_vline(x=rate, line_dash="dot", line_color="#b28355")
+        fig_sectors.update_xaxes(showgrid=True, gridcolor="#edf1f5", ticksuffix="%",
+                                 range=[0, max(float(plotted["taxa"].max()), rate, 5) * 1.15])
+        fig_sectors.update_yaxes(showgrid=False, ticklabelstandoff=18, categoryorder="array", categoryarray=plotted["industry_clean"].tolist(),
+                                 tickmode="array", tickvals=plotted["industry_clean"].tolist(),
+                                 ticktext=[name if len(name) <= 19 else name[:18] + "…" for name in plotted["industry_clean"]])
 
     groups = df.groupby(["tem_logo", "remoto"], as_index=False).agg(total=("id_vaga", "size"), fraudes=("fraude_bin", "sum"))
-    groups["taxa"] = 100 * groups["fraudes"] / groups["total"]
-    groups["logo"] = groups["tem_logo"].map({"Sim": "Com logo", "Não": "Sem logo"}).fillna(groups["tem_logo"])
-    groups["modalidade"] = groups["remoto"].map({"Sim": "Remoto", "Não": "Não remoto"}).fillna(groups["remoto"])
-    groups["amostra"] = groups["total"].map(lambda total: f"n={format_count(int(total))}")
-    fig_logo = px.bar(groups, x="logo", y="taxa", color="modalidade", barmode="group",
-                      text="amostra", custom_data=["fraudes", "total"], labels={"logo": "", "taxa": "Taxa de fraude (%)"},
-                      color_discrete_map={"Não remoto": "#368c91", "Remoto": "#9bcfbe"})
-    fig_logo.update_traces(textposition="outside", textfont_size=10, cliponaxis=False,
-                           hovertemplate="<b>%{fullData.name}</b><br>Taxa: %{y:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>")
+    lookup = {(row.tem_logo, row.remoto): row for row in groups.itertuples()}
+    z, text, custom = [], [], []
+    for remote in ["Não", "Sim"]:
+        z_row, text_row, custom_row = [], [], []
+        for logo_value in ["Sim", "Não"]:
+            group = lookup.get((logo_value, remote))
+            if group is None:
+                z_row.append(None)
+                text_row.append("Sem dados")
+                custom_row.append([0, 0])
+            else:
+                cell_rate = 100 * group.fraudes / group.total
+                z_row.append(cell_rate)
+                text_row.append(f"{cell_rate:.1f}%<br>n={format_count(group.total)}")
+                custom_row.append([group.fraudes, group.total])
+        z.append(z_row)
+        text.append(text_row)
+        custom.append(custom_row)
+    fig_logo = go.Figure(go.Heatmap(
+        z=z, x=["Com logo", "Sem logo"], y=["Não remoto", "Remoto"], customdata=custom,
+        text=text, texttemplate="%{text}", textfont=dict(size=12), hoverongaps=False,
+        zmin=0, zmax=100, colorscale=[[0, "#edf7f3"], [.3, "#86bdb1"], [1, "#275f64"]],
+        colorbar=dict(title="%", thickness=10, len=.7), xgap=5, ygap=5,
+        hovertemplate="%{x} · %{y}<br>Taxa: %{z:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>",
+    ))
     chart_layout(fig_logo, 390)
-    fig_logo.update_yaxes(range=[0, max(groups["taxa"].max() * 1.25, 5)], ticksuffix="%")
+    fig_logo.update_yaxes(showgrid=False, autorange="reversed")
+    fig_logo.update_layout(margin=dict(l=10, r=10, t=20, b=35))
 
     colors = {"Real": "#368c91", "Fraudulenta": "#dd7c88"}
-    contracts = df.groupby(["employment_type_clean", "status_vaga"], as_index=False).size()
-    fig_contracts = px.bar(contracts, x="employment_type_clean", y="size", color="status_vaga", barmode="stack",
-                           labels={"employment_type_clean": "", "size": "Anúncios", "status_vaga": ""},
-                           color_discrete_map=colors)
+    contracts = df.groupby("employment_type_clean", as_index=False).size().sort_values(["size", "employment_type_clean"], ascending=[False, True])
+    fig_contracts = go.Figure(go.Pie(
+        labels=contracts["employment_type_clean"], values=contracts["size"], hole=.64, sort=False,
+        marker=dict(colors=["#368c91", "#9bcfbe", "#8b80b1", "#d9ae6f", "#7094b2", "#c9828e", "#b4bbc3"]),
+        textinfo="percent", textposition="inside", insidetextorientation="horizontal",
+        hovertemplate="<b>%{label}</b><br>%{value} anúncios · %{percent}<extra></extra>",
+    ))
     chart_layout(fig_contracts, 330)
-    fig_contracts.update_xaxes(categoryorder="total descending")
-    fig_contracts.update_yaxes(rangemode="tozero")
+    fig_contracts.update_layout(legend=dict(orientation="h", yanchor="top", y=-.08, x=0, font_size=10),
+                                margin=dict(l=5, r=5, t=5, b=70), uniformtext_minsize=10, uniformtext_mode="hide")
+    fig_contracts.add_annotation(text=f"<b>{format_count(total)}</b><br>anúncios", x=.5, y=.5,
+                                 showarrow=False, font=dict(size=15, color="#1b303b"))
 
     top_countries = df["pais"].value_counts().head(10).index
     countries = df[df["pais"].isin(top_countries)].groupby(["pais", "status_vaga"], as_index=False).size()
@@ -339,9 +411,23 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     fig_countries.update_xaxes(categoryorder="total descending")
     fig_countries.update_yaxes(rangemode="tozero")
 
+    country_counts = df["pais"].value_counts()
+    top_country = country_counts.index[0]
+    country_share = 100 * country_counts.iloc[0] / total
+    coverage = 100 * country_counts.head(10).sum() / total
+    comparison = ("O filtro de status está ativo: as taxas refletem somente os rótulos selecionados."
+                  if status and status != "Todas" else
+                  f"Diferença para a base completa: {rate - BASE_RATE:+.1f} pontos percentuais. Não indica causalidade.")
+    summary = [
+        html.Div([html.Div("LEITURA DO RECORTE", className="eyebrow"), html.H3(f"{rate:.1f}% rotulados como fraude"), html.P(comparison)]),
+        html.Div([html.Div("CONCENTRAÇÃO", className="eyebrow"), html.H3(f"{top_country} · {country_share:.1f}% dos anúncios"),
+                  html.P(f"Os 10 maiores países cobrem {coverage:.1f}% do recorte. País não informado permanece como categoria da base.")]),
+        html.Div([html.Div("COMO EXPLORAR", className="eyebrow"), html.H3("Compare antes de concluir"),
+                  html.P(f"{len(eligible)} setores atendem à amostra mínima de {sector_min} anúncios; o gráfico mostra até 10. Use os filtros de país e setor para investigar e a tabela para ler os registros.")]),
+    ]
     records = df[TABLE_COLS].copy()
     records["id"] = records["id_vaga"]
-    return context, kpis, fig_sectors, fig_logo, fig_contracts, fig_countries, records.to_dict("records"), [], 0
+    return context, kpis, fig_sectors, fig_logo, fig_contracts, fig_countries, records.to_dict("records"), [], 0, summary
 
 
 @dash_app.callback(
