@@ -16,6 +16,35 @@ def filters(**overrides):
 
 
 class DashboardTest(unittest.TestCase):
+    def test_layout_contains_callback_targets_and_navigation_destinations(self):
+        def components(node):
+            yield node
+            children = getattr(node, "children", [])
+            if not isinstance(children, (list, tuple)):
+                children = [children]
+            for child in children:
+                yield from components(child)
+
+        nodes = list(components(app.dash_app.layout))
+        ids = [node.id for node in nodes if getattr(node, "id", None)]
+        self.assertEqual(len(ids), len(set(ids)))
+        for callback in app.dash_app.callback_map.values():
+            outputs = callback["output"]
+            if not isinstance(outputs, list):
+                outputs = [outputs]
+            for output in outputs:
+                self.assertIn(output.component_id, ids)
+        for node in nodes:
+            href = getattr(node, "href", "")
+            if href.startswith("#"):
+                self.assertIn(href[1:], ids)
+        self.assertIs(app.server, app.dash_app.server)
+        self.assertIs(app.app, app.server)
+        client = app.server.test_client()
+        for path in ("/", "/_dash-layout", "/_dash-dependencies", "/assets/dashboard.css"):
+            with client.get(path) as response:
+                self.assertEqual(response.status_code, 200, path)
+
     def test_all_records_are_available_and_selection_has_stable_ids(self):
         context, _, _, _, _, _, records, selection, page = app.update_dashboard(*filters())
         self.assertEqual(len(records), app.OPTS["total"])

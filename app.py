@@ -83,7 +83,8 @@ MAX_DESC_LEN = OPTS["max_len"]
 BASE_RATE = 100 * OPTS["frauds"] / OPTS["total"] if OPTS["total"] else 0
 
 dash_app = Dash(__name__, title="Radar de vagas | Análise de fraude", update_title="Atualizando análise…")
-app = server = dash_app.server
+app = dash_app.server
+server = app
 
 
 def field(label, component, extra_class=""):
@@ -112,19 +113,24 @@ def graph_card(eyebrow, title, description, graph_id, wide=False):
 dash_app.layout = html.Div(className="app-shell", children=[
     html.Header(className="topbar", children=[
         html.Div(className="brand", children=[
-            html.Div("R", className="brand-mark", **{"aria-hidden": "true"}),
+            html.Div(className="brand-mark", **{"aria-hidden": "true"}),
             html.Div([html.Div("RADAR DE VAGAS", className="brand-name"), html.Div("Pesquisa de anúncios de emprego", className="brand-subtitle")]),
+        ]),
+        html.Nav(className="topbar-nav", **{"aria-label": "Navegação principal"}, children=[
+            html.A("Visão geral", href="#visao-geral"),
+            html.A("Análises", href="#analises"),
+            html.A("Explorador", href="#explorador"),
         ]),
         html.Div(className="topbar-right", children=[
             html.Span("BASE HISTÓRICA", className="data-badge"),
             html.Span("Análise exploratória", className="topbar-note"),
         ]),
     ]),
-    html.Main(className="main-content", children=[
+    html.Main(id="visao-geral", className="main-content", children=[
         html.Div(className="page-intro", children=[
             html.Div([
-                html.Div("VISÃO GERAL  /  ANÚNCIOS", className="eyebrow"),
-                html.H1("Entenda os padrões da base."),
+                html.Div("DADOS QUE REVELAM PADRÕES", className="eyebrow"),
+                html.H1(["Um novo olhar sobre", html.Br(), html.Span("o mercado de trabalho.")]),
                 html.P("Explore os anúncios e compare os rótulos de fraude em cada recorte.", className="intro-copy"),
             ]),
             html.Div(className="intro-actions", children=[
@@ -181,13 +187,13 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 html.Div(id="result-context", className="result-context", role="status"),
             ]),
             html.Div(id="kpi-row", className="kpi-grid"),
-            html.Div(className="charts-grid", children=[
+            html.Div(id="analises", className="charts-grid", children=[
                 graph_card("01  /  SETORES", "Como a taxa varia por setor?", "Taxa de fraude nos dez maiores setores por volume. O número entre parênteses é o total de anúncios.", "g-setores", wide=True),
                 graph_card("02  /  CARACTERÍSTICAS", "Logo e modalidade", "Taxa de fraude e tamanho da amostra em cada grupo. Ausência de logo não é prova de fraude.", "g-logo-fraude"),
                 graph_card("03  /  CONTRATOS", "Distribuição por contrato", "Quantidade de anúncios por tipo de contrato e rótulo.", "g-contrato-exp"),
                 graph_card("04  /  GEOGRAFIA", "Países com mais anúncios", "Dez maiores grupos do recorte, com contagem de rótulos.", "g-paises", wide=True),
             ]),
-            html.Section(className="panel records-panel", children=[
+            html.Section(id="explorador", className="panel records-panel", children=[
                 html.Div(className="section-heading records-heading", children=[
                     html.Div([html.Div("EXPLORADOR", className="eyebrow"), html.H2("Investigue os anúncios"), html.P("Selecione uma linha para ler o registro completo.", className="section-note")]),
                     html.Div("Filtros e ordenação da tabela não alteram gráficos ou CSV.", className="table-note"),
@@ -204,8 +210,8 @@ dash_app.layout = html.Div(className="app-shell", children=[
                     ],
                     page_size=10, sort_action="native", filter_action="native", row_selectable="single",
                     selected_rows=[], style_table={"overflowX": "auto"},
-                    style_header={"backgroundColor": "#f5f7fa", "color": "#566478", "fontWeight": "700", "fontSize": "11px", "border": "0", "borderBottom": "1px solid #e3e9f0", "textTransform": "uppercase"},
-                    style_cell={"textAlign": "left", "padding": "12px", "fontSize": "13px", "minWidth": "85px", "maxWidth": "230px", "overflow": "hidden", "textOverflow": "ellipsis", "border": "0", "borderBottom": "1px solid #edf1f5", "fontFamily": "Segoe UI, Arial, sans-serif", "color": "#334155"},
+                    style_header={"backgroundColor": "#f5f8f9", "color": "#566478", "fontWeight": "700", "fontSize": "11px", "border": "0", "borderBottom": "1px solid #e3e9f0", "textTransform": "uppercase"},
+                    style_cell={"textAlign": "left", "padding": "12px", "fontSize": "13px", "minWidth": "85px", "maxWidth": "230px", "overflow": "hidden", "textOverflow": "ellipsis", "border": "0", "borderBottom": "1px solid #edf1f5", "fontFamily": "Inter, Segoe UI, Arial, sans-serif", "color": "#334155"},
                     style_data_conditional=[{"if": {"filter_query": '{status_vaga} = "Fraudulenta"', "column_id": "status_vaga"}, "color": "#b33c4a", "fontWeight": "700"}],
                 ),
                 html.Div(id="detalhe-vaga", className="record-detail"),
@@ -242,7 +248,7 @@ def reset_filters(_n):
 def chart_layout(fig, height=320):
     fig.update_layout(
         template="plotly_white", height=height, margin=dict(l=12, r=20, t=15, b=35),
-        font=dict(family="Arial, sans-serif", color="#64748b", size=11),
+        font=dict(family="Inter, Segoe UI, Arial, sans-serif", color="#64748b", size=11),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         legend=dict(title=None, orientation="h", yanchor="bottom", y=1.02, x=0),
         hoverlabel=dict(bgcolor="white", font_size=12),
@@ -295,7 +301,7 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     sectors["label"] = sectors.apply(lambda row: f"{row['taxa']:.1f}%  (n={format_count(int(row['total']))})", axis=1)
     fig_sectors = px.bar(sectors, x="taxa", y="industry_clean", orientation="h", text="label",
                          custom_data=["fraudes", "total"],
-                         labels={"taxa": "Taxa de fraude", "industry_clean": ""}, color_discrete_sequence=["#5774d8"])
+                         labels={"taxa": "Taxa de fraude", "industry_clean": ""}, color_discrete_sequence=["#368c91"])
     fig_sectors.update_traces(textposition="outside", cliponaxis=False, hovertemplate="<b>%{y}</b><br>Taxa: %{x:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>")
     chart_layout(fig_sectors, 390)
     fig_sectors.update_xaxes(showgrid=True, gridcolor="#edf1f5", range=[0, max(sectors["taxa"].max() * 1.7, 5)], ticksuffix="%")
@@ -310,13 +316,13 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     groups["amostra"] = groups["total"].map(lambda total: f"n={format_count(int(total))}")
     fig_logo = px.bar(groups, x="logo", y="taxa", color="modalidade", barmode="group",
                       text="amostra", custom_data=["fraudes", "total"], labels={"logo": "", "taxa": "Taxa de fraude (%)"},
-                      color_discrete_map={"Não remoto": "#5774d8", "Remoto": "#54b8aa"})
+                      color_discrete_map={"Não remoto": "#368c91", "Remoto": "#9bcfbe"})
     fig_logo.update_traces(textposition="outside", textfont_size=10, cliponaxis=False,
                            hovertemplate="<b>%{fullData.name}</b><br>Taxa: %{y:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>")
     chart_layout(fig_logo, 390)
     fig_logo.update_yaxes(range=[0, max(groups["taxa"].max() * 1.25, 5)], ticksuffix="%")
 
-    colors = {"Real": "#5774d8", "Fraudulenta": "#e9828c"}
+    colors = {"Real": "#368c91", "Fraudulenta": "#dd7c88"}
     contracts = df.groupby(["employment_type_clean", "status_vaga"], as_index=False).size()
     fig_contracts = px.bar(contracts, x="employment_type_clean", y="size", color="status_vaga", barmode="stack",
                            labels={"employment_type_clean": "", "size": "Anúncios", "status_vaga": ""},
