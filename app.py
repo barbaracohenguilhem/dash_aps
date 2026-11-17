@@ -83,7 +83,8 @@ MAX_DESC_LEN = OPTS["max_len"]
 BASE_RATE = 100 * OPTS["frauds"] / OPTS["total"] if OPTS["total"] else 0
 
 dash_app = Dash(__name__, title="Radar de vagas | Análise de fraude", update_title="Atualizando análise…")
-app = server = dash_app.server
+app = dash_app.server
+server = app
 
 
 def field(label, component, extra_class=""):
@@ -108,366 +109,109 @@ def graph_card(eyebrow, title, description, graph_id, wide=False):
         className=f"panel chart-card{' chart-wide' if wide else ''}",
     )
 
-dash_app = Dash(__name__, title="Job Postings Fraud Analytics — Database")
-app = dash_app.server
-server = dash_app.server
 
-CARD_STYLE = {
-    "backgroundColor": "#FFFFFF",
-    "borderRadius": "18px",
-    "padding": "20px 22px",
-    "boxShadow": "0 12px 30px rgba(15, 23, 42, 0.045)",
-    "border": "1px solid #E7EBF3",
-}
-
-LABEL_STYLE = {
-    "fontSize": "11px",
-    "fontWeight": "600",
-    "color": "#64718A",
-    "marginBottom": "7px",
-    "display": "block",
-    "textTransform": "uppercase",
-    "letterSpacing": "0.06em",
-}
-
-dash_app.layout = html.Div(
-    className="app-shell",
-    style={
-        "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        "minHeight": "100vh",
-        "color": "#0F172A",
-    },
-    children=[
-        html.Div(
-            className="hero",
-            style={
-                "display": "flex",
-                "justifyContent": "space-between",
-                "alignItems": "center",
-                "flexWrap": "wrap",
-                "gap": "20px",
-                "marginBottom": "22px",
-            },
-            children=[
-                html.Div(
-                    className="hero-copy",
-                    children=[
-                        html.Div("PAINEL DE ANÁLISE", className="hero-eyebrow"),
-                        html.H2(
-                            "Job Posting Fraud Analytics",
-                            className="hero-title",
-                        ),
-                        html.P(
-                            "Explore 10.000 anúncios de emprego e investigue sinais de fraude.",
-                            className="hero-subtitle",
-                        ),
-                    ],
-                ),
-                html.Div(
-                    className="hero-actions",
-                    style={"display": "flex", "gap": "10px"},
-                    children=[
-                        html.Button(
-                            "Limpar Filtros",
-                            id="btn-reset",
-                            n_clicks=0,
-                            className="button button-secondary",
-                            style={
-                                "backgroundColor": "#334155",
-                                "color": "#FFFFFF",
-                                "border": "1px solid #475569",
-                                "borderRadius": "8px",
-                                "padding": "9px 16px",
-                                "cursor": "pointer",
-                                "fontWeight": "600",
-                            },
-                        ),
-                        html.Button(
-                            "Baixar CSV Filtrado",
-                            id="btn-download",
-                            n_clicks=0,
-                            className="button button-primary",
-                            style={
-                                "backgroundColor": "#2563EB",
-                                "color": "#FFFFFF",
-                                "border": "none",
-                                "borderRadius": "8px",
-                                "padding": "9px 16px",
-                                "cursor": "pointer",
-                                "fontWeight": "600",
-                            },
-                        ),
-                        dcc.Download(id="download-dataframe-csv"),
-                    ],
-                ),
-            ],
-        ),
-
-        html.Div(
-            className="panel filter-panel",
-            style={**CARD_STYLE, "marginBottom": "20px"},
-            children=[
-                html.Div(
-                    className="section-heading",
-                    children=[
-                        html.Div("REFINE A BUSCA", className="section-eyebrow"),
-                        html.H3("Filtros interativos", className="section-title"),
-                    ],
-                ),
-                html.Div(
-                    className="filter-grid",
-                    style={
-                        "display": "grid",
-                        "gridTemplateColumns": "repeat(auto-fit, minmax(210px, 1fr))",
-                        "gap": "18px 16px",
-                    },
-                    children=[
-                        html.Div([
-                            html.Label("Status da Vaga", style=LABEL_STYLE),
-                            dcc.RadioItems(
-                                id="f-status",
-                                options=[
-                                    {"label": " Todas", "value": "Todas"},
-                                    {"label": " Reais", "value": "Real"},
-                                    {"label": " Fraudulentas", "value": "Fraudulenta"},
-                                ],
-                                value="Todas",
-                                inline=True,
-                                className="status-control",
-                                labelStyle={"marginRight": "12px", "fontSize": "13px", "cursor": "pointer"},
-                            ),
-                        ]),
-                        html.Div([
-                            html.Label("Busca por Palavra-Chave (Cargo / Texto)", style=LABEL_STYLE),
-                            dcc.Input(
-                                id="f-busca",
-                                type="text",
-                                placeholder="Ex.: Engineer, Data, Work from home...",
-                                debounce=True,
-                                className="search-input",
-                                style={
-                                    "width": "100%",
-                                    "padding": "9px 12px",
-                                    "borderRadius": "9px",
-                                    "border": "1px solid #DCE2ED",
-                                    "boxSizing": "border-box",
-                                },
-                            ),
-                        ]),
-                        html.Div([
-                            html.Label("Logo da Empresa", style=LABEL_STYLE),
-                            dcc.Dropdown(
-                                id="f-logo",
-                                options=[
-                                    {"label": "Todos (Com e Sem Logo)", "value": "Todos"},
-                                    {"label": "Com Logo (Sim)", "value": "Sim"},
-                                    {"label": "Sem Logo (Não)", "value": "Não"},
-                                ],
-                                value="Todos",
-                                clearable=False,
-                            ),
-                        ]),
-                        html.Div([
-                            html.Label("Trabalho Remoto", style=LABEL_STYLE),
-                            dcc.Dropdown(
-                                id="f-remoto",
-                                options=[
-                                    {"label": "Todos (Presencial e Remoto)", "value": "Todos"},
-                                    {"label": "Remoto (Sim)", "value": "Sim"},
-                                    {"label": "Presencial (Não)", "value": "Não"},
-                                ],
-                                value="Todos",
-                                clearable=False,
-                            ),
-                        ]),
-                        html.Div([
-                            html.Label("País", style=LABEL_STYLE),
-                            dcc.Dropdown(
-                                id="f-pais",
-                                options=OPTS["pais"],
-                                multi=True,
-                                placeholder="Todos os países...",
-                            ),
-                        ]),
-                        html.Div([
-                            html.Label("Indústria / Setor", style=LABEL_STYLE),
-                            dcc.Dropdown(
-                                id="f-setor",
-                                options=OPTS["industry_clean"],
-                                multi=True,
-                                placeholder="Todos os setores...",
-                            ),
-                        ]),
-                        html.Div([
-                            html.Label("Tipo de Contrato", style=LABEL_STYLE),
-                            dcc.Dropdown(
-                                id="f-contrato",
-                                options=OPTS["employment_type_clean"],
-                                multi=True,
-                                placeholder="Full-time, Part-time, Contract...",
-                            ),
-                        ]),
-                        html.Div([
-                            html.Label("Nível de Experiência", style=LABEL_STYLE),
-                            dcc.Dropdown(
-                                id="f-exp",
-                                options=OPTS["experience_clean"],
-                                multi=True,
-                                placeholder="Entry level, Mid-Senior...",
-                            ),
-                        ]),
-                        html.Div([
-                            html.Label("Escolaridade Exigida", style=LABEL_STYLE),
-                            dcc.Dropdown(
-                                id="f-edu",
-                                options=OPTS["education_clean"],
-                                multi=True,
-                                placeholder="Bachelor's, High School...",
-                            ),
-                        ]),
-                        html.Div(
-                            className="range-field",
-                            style={"gridColumn": "span 2"},
-                            children=[
-                                html.Label("Tamanho do Texto da Descrição (caracteres)", style=LABEL_STYLE),
-                                dcc.RangeSlider(
-                                    id="f-tam",
-                                    min=0,
-                                    max=MAX_DESC_LEN,
-                                    step=100,
-                                    value=[0, MAX_DESC_LEN],
-                                    marks={
-                                        0: "0",
-                                        2500: "2.5k",
-                                        5000: "5k",
-                                        10000: "10k",
-                                        MAX_DESC_LEN: f"{MAX_DESC_LEN}",
-                                    },
-                                    tooltip={"placement": "bottom", "always_visible": False},
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-            ],
-        ),
-
-        html.Div(
-            id="kpi-row",
-            className="kpi-grid",
-            style={
-                "display": "grid",
-                "gridTemplateColumns": "repeat(auto-fit, minmax(180px, 1fr))",
-                "gap": "14px",
-                "marginBottom": "20px",
-            },
-        ),
-
-        html.Div(
-            className="chart-grid",
-            style={
-                "display": "grid",
-                "gridTemplateColumns": "repeat(auto-fit, minmax(360px, 1fr))",
-                "gap": "16px",
-                "marginBottom": "20px",
-            },
-            children=[
-                html.Div(
-                    className="panel chart-panel",
-                    style=CARD_STYLE,
-                    children=[dcc.Graph(id="g-setores", config={"displayModeBar": False})],
-                ),
-                html.Div(
-                    className="panel chart-panel",
-                    style=CARD_STYLE,
-                    children=[dcc.Graph(id="g-logo-fraude", config={"displayModeBar": False})],
-                ),
-                html.Div(
-                    className="panel chart-panel",
-                    style=CARD_STYLE,
-                    children=[dcc.Graph(id="g-contrato-exp", config={"displayModeBar": False})],
-                ),
-                html.Div(
-                    className="panel chart-panel",
-                    style=CARD_STYLE,
-                    children=[dcc.Graph(id="g-paises", config={"displayModeBar": False})],
-                ),
-            ],
-        ),
-
-        html.Div(
-            className="panel table-panel",
-            style={**CARD_STYLE, "marginBottom": "20px"},
-            children=[
-                html.Div(
-                    className="table-heading",
-                    style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", "marginBottom": "10px"},
-                    children=[
-                        html.H3(
-                            "Anúncios de emprego",
-                            className="section-title",
-                        ),
-                        html.Span(
-                            "Selecione uma linha para ver os detalhes. Use os cabeçalhos para filtrar.",
-                            className="table-hint",
-                        ),
-                    ],
-                ),
+dash_app.layout = html.Div(className="app-shell", children=[
+    html.Header(className="topbar", children=[
+        html.Div(className="brand", children=[
+            html.Div(className="brand-mark", **{"aria-hidden": "true"}),
+            html.Div([html.Div("RADAR DE VAGAS", className="brand-name"), html.Div("Pesquisa de anúncios de emprego", className="brand-subtitle")]),
+        ]),
+        html.Nav(className="topbar-nav", **{"aria-label": "Navegação principal"}, children=[
+            html.A("Visão geral", href="#visao-geral"),
+            html.A("Análises", href="#analises"),
+            html.A("Explorador", href="#explorador"),
+        ]),
+        html.Div(className="topbar-right", children=[
+            html.Span("BASE HISTÓRICA", className="data-badge"),
+            html.Span("Análise exploratória", className="topbar-note"),
+        ]),
+    ]),
+    html.Main(id="visao-geral", className="main-content", children=[
+        html.Div(className="page-intro", children=[
+            html.Div([
+                html.Div("DADOS QUE REVELAM PADRÕES", className="eyebrow"),
+                html.H1(["Um novo olhar sobre", html.Br(), html.Span("o mercado de trabalho.")]),
+                html.P("Explore os anúncios e compare os rótulos de fraude em cada recorte.", className="intro-copy"),
+            ]),
+            html.Div(className="intro-actions", children=[
+                html.Button("Limpar filtros", id="btn-reset", n_clicks=0, className="button button-secondary"),
+                html.Button("↓  Exportar CSV", id="btn-download", n_clicks=0, className="button button-primary"),
+                html.Div(id="export-status", className="export-status", role="status"),
+            ]),
+        ]),
+        html.Div(className="notice", children=[
+            html.Span("i", className="notice-icon", **{"aria-hidden": "true"}),
+            html.Div([
+                html.Strong("Sobre esta análise. "),
+                "Os dados são históricos e os rótulos vêm da base original. Associações não comprovam fraude, e não há avaliação de vagas atuais.",
+            ]),
+        ]),
+        html.Section(className="filter-panel panel", children=[
+            html.Div(className="section-heading", children=[
+                html.Div([html.Div("EXPLORAR", className="eyebrow"), html.H2("Escolha seu recorte")]),
+                html.P("Os indicadores e gráficos acompanham os filtros abaixo.", className="section-note"),
+            ]),
+            html.Div(className="filter-grid filter-primary", children=[
+                field("Buscar na vaga", dcc.Input(id="f-busca", type="text", placeholder="Cargo, localização ou texto…", debounce=True), "search-field"),
+                field("Status", dropdown("f-status", [
+                    {"label": "Todos os anúncios", "value": "Todas"},
+                    {"label": "Reais", "value": "Real"},
+                    {"label": "Fraudulentos", "value": "Fraudulenta"},
+                ], "Todos os anúncios", multi=False, value="Todas")),
+                field("País", dropdown("f-pais", OPTS["pais"], "Todos os países")),
+                field("Setor", dropdown("f-setor", OPTS["industry_clean"], "Todos os setores")),
+            ]),
+            html.Details(className="advanced-filters", children=[
+                html.Summary("Mais filtros"),
+                html.Div(className="filter-grid filter-advanced", children=[
+                    field("Contrato", dropdown("f-contrato", OPTS["employment_type_clean"], "Todos os contratos")),
+                    field("Experiência", dropdown("f-exp", OPTS["experience_clean"], "Todos os níveis")),
+                    field("Escolaridade", dropdown("f-edu", OPTS["education_clean"], "Todas as escolaridades")),
+                    field("Logo da empresa", dropdown("f-logo", [
+                        {"label": "Todos", "value": "Todos"}, {"label": "Com logo", "value": "Sim"}, {"label": "Sem logo", "value": "Não"},
+                    ], "Todos", multi=False, value="Todos")),
+                    field("Trabalho remoto", dropdown("f-remoto", [
+                        {"label": "Todos", "value": "Todos"}, {"label": "Remoto", "value": "Sim"}, {"label": "Não remoto", "value": "Não"},
+                    ], "Todos", multi=False, value="Todos")),
+                    field("Tamanho da descrição (caracteres)", dcc.RangeSlider(
+                        id="f-tam", min=0, max=MAX_DESC_LEN, step=100, value=[0, MAX_DESC_LEN],
+                        marks={0: "0", MAX_DESC_LEN: f"{MAX_DESC_LEN:,}".replace(",", ".")},
+                        tooltip={"placement": "bottom", "always_visible": False},
+                    ), "range-field"),
+                ]),
+            ]),
+        ]),
+        dcc.Loading(type="circle", children=html.Div([
+            html.Div(className="results-heading", children=[
+                html.Div([html.Div("SEU RECORTE", className="eyebrow"), html.H2("O que os dados mostram")]),
+                html.Div(id="result-context", className="result-context", role="status"),
+            ]),
+            html.Div(id="kpi-row", className="kpi-grid"),
+            html.Div(id="analises", className="charts-grid", children=[
+                graph_card("01  /  SETORES", "Como a taxa varia por setor?", "Taxa de fraude nos dez maiores setores por volume. O número entre parênteses é o total de anúncios.", "g-setores", wide=True),
+                graph_card("02  /  CARACTERÍSTICAS", "Logo e modalidade", "Taxa de fraude e tamanho da amostra em cada grupo. Ausência de logo não é prova de fraude.", "g-logo-fraude"),
+                graph_card("03  /  CONTRATOS", "Distribuição por contrato", "Quantidade de anúncios por tipo de contrato e rótulo.", "g-contrato-exp"),
+                graph_card("04  /  GEOGRAFIA", "Países com mais anúncios", "Dez maiores grupos do recorte, com contagem de rótulos.", "g-paises", wide=True),
+            ]),
+            html.Section(id="explorador", className="panel records-panel", children=[
+                html.Div(className="section-heading records-heading", children=[
+                    html.Div([html.Div("EXPLORADOR", className="eyebrow"), html.H2("Investigue os anúncios"), html.P("Selecione uma linha para ler o registro completo.", className="section-note")]),
+                    html.Div("Filtros e ordenação da tabela não alteram gráficos ou CSV.", className="table-note"),
+                ]),
                 dash_table.DataTable(
                     id="tabela-vagas",
                     columns=[
-                        {"name": "ID", "id": "id_vaga", "type": "numeric"},
-                        {"name": "Cargo", "id": "title"},
-                        {"name": "Status", "id": "status_vaga"},
-                        {"name": "País", "id": "pais"},
-                        {"name": "Setor", "id": "industry_clean"},
-                        {"name": "Contrato", "id": "employment_type_clean"},
-                        {"name": "Experiência", "id": "experience_clean"},
-                        {"name": "Salário", "id": "salary_range"},
-                        {"name": "Logo?", "id": "tem_logo"},
-                        {"name": "Remoto?", "id": "remoto"},
-                        {"name": "Tam. Texto", "id": "tamanho_descricao", "type": "numeric"},
-                    ],
-                    page_size=12,
-                    sort_action="native",
-                    filter_action="native",
-                    row_selectable="single",
-                    selected_rows=[0],
-                    style_table={"overflowX": "auto"},
-                    style_header={
-                        "backgroundColor": "#F6F8FC",
-                        "color": "#526079",
-                        "fontWeight": "600",
-                        "fontSize": "11px",
-                        "border": "1px solid #E7EBF3",
-                        "textTransform": "uppercase",
-                    },
-                    style_cell={
-                        "textAlign": "left",
-                        "padding": "11px 12px",
-                        "fontSize": "12px",
-                        "maxWidth": "260px",
-                        "overflow": "hidden",
-                        "textOverflow": "ellipsis",
-                        "border": "1px solid #EDF0F5",
-                        "color": "#34415B",
-                    },
-                    style_data_conditional=[
-                        {
-                            "if": {"filter_query": '{status_vaga} = "Fraudulenta"'},
-                            "backgroundColor": "#FFF1F2",
-                            "color": "#BE123C",
-                            "fontWeight": "600",
-                        },
-                        {
-                            "if": {"row_index": "odd", "filter_query": '{status_vaga} != "Fraudulenta"'},
-                            "backgroundColor": "#FAFBFD",
-                        },
+                        {"name": "ID", "id": "id_vaga", "type": "numeric"}, {"name": "Cargo", "id": "title"},
+                        {"name": "Status", "id": "status_vaga"}, {"name": "País", "id": "pais"},
+                        {"name": "Setor", "id": "industry_clean"}, {"name": "Contrato", "id": "employment_type_clean"},
+                        {"name": "Experiência", "id": "experience_clean"}, {"name": "Salário", "id": "salary_range"},
+                        {"name": "Logo", "id": "tem_logo"}, {"name": "Remoto", "id": "remoto"},
+                        {"name": "Caracteres", "id": "tamanho_descricao", "type": "numeric"},
                     ],
                     page_size=10, sort_action="native", filter_action="native", row_selectable="single",
                     selected_rows=[], style_table={"overflowX": "auto"},
-                    style_header={"backgroundColor": "#f5f7fa", "color": "#566478", "fontWeight": "700", "fontSize": "11px", "border": "0", "borderBottom": "1px solid #e3e9f0", "textTransform": "uppercase"},
-                    style_cell={"textAlign": "left", "padding": "12px", "fontSize": "13px", "minWidth": "85px", "maxWidth": "230px", "overflow": "hidden", "textOverflow": "ellipsis", "border": "0", "borderBottom": "1px solid #edf1f5", "fontFamily": "Segoe UI, Arial, sans-serif", "color": "#334155"},
+                    style_header={"backgroundColor": "#f5f8f9", "color": "#566478", "fontWeight": "700", "fontSize": "11px", "border": "0", "borderBottom": "1px solid #e3e9f0", "textTransform": "uppercase"},
+                    style_cell={"textAlign": "left", "padding": "12px", "fontSize": "13px", "minWidth": "85px", "maxWidth": "230px", "overflow": "hidden", "textOverflow": "ellipsis", "border": "0", "borderBottom": "1px solid #edf1f5", "fontFamily": "Inter, Segoe UI, Arial, sans-serif", "color": "#334155"},
                     style_data_conditional=[{"if": {"filter_query": '{status_vaga} = "Fraudulenta"', "column_id": "status_vaga"}, "color": "#b33c4a", "fontWeight": "700"}],
                 ),
                 html.Div(id="detalhe-vaga", className="record-detail"),
@@ -501,25 +245,10 @@ def reset_filters(_n):
     return "Todas", "", "Todos", "Todos", [], [], [], [], [], [0, MAX_DESC_LEN], ""
 
 
-    kpis = [
-        make_kpi_card("Vagas Filtradas", f"{total:,}".replace(",", "."), "de 10.000 registros na base", "#2563EB"),
-        make_kpi_card("Vagas Reais", f"{reais:,}".replace(",", "."), f"{(100 - taxa):.1f}% do filtro atual", "#10B981"),
-        make_kpi_card("Vagas Fraudulentas", f"{fraudes:,}".replace(",", "."), "detectadas no recorte", "#EF4444"),
-        make_kpi_card("Taxa de Fraude", f"{taxa:.2f}%", "média global = 4.53%", "#F59E0B"),
-        make_kpi_card("Sem Logo de Empresa", f"{sem_logo_pct:.1f}%", "fator clássico de alerta", "#8B5CF6"),
-    ]
-
-    empty_layout = dict(
-        template="plotly_white",
-        margin=dict(l=24, r=22, t=50, b=34),
-        height=340,
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF",
-        font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif", size=11, color="#71809A"),
 def chart_layout(fig, height=320):
     fig.update_layout(
         template="plotly_white", height=height, margin=dict(l=12, r=20, t=15, b=35),
-        font=dict(family="Arial, sans-serif", color="#64748b", size=11),
+        font=dict(family="Inter, Segoe UI, Arial, sans-serif", color="#64748b", size=11),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         legend=dict(title=None, orientation="h", yanchor="bottom", y=1.02, x=0),
         hoverlabel=dict(bgcolor="white", font_size=12),
@@ -528,119 +257,6 @@ def chart_layout(fig, height=320):
     fig.update_yaxes(gridcolor="#edf1f5", zeroline=False, automargin=True)
     return fig
 
-    if total == 0:
-        empty_fig = go.Figure().update_layout(
-            title="Nenhuma vaga encontrada para este filtro",
-            title_font=dict(size=14, color="#25314C"),
-            **empty_layout,
-        )
-        return kpis, empty_fig, empty_fig, empty_fig, empty_fig, [], []
-
-    # Gráfico 1: Top 10 Setores (Real vs Fraudulenta)
-    top_ind = df["industry_clean"].value_counts().head(10).index.tolist()
-    df_ind = (
-        df[df["industry_clean"].isin(top_ind)]
-        .groupby(["industry_clean", "status_vaga"], as_index=False)
-        .size()
-    )
-    fig_setores = px.bar(
-        df_ind,
-        x="size",
-        y="industry_clean",
-        color="status_vaga",
-        orientation="h",
-        barmode="stack",
-        color_discrete_map={"Real": "#3B82F6", "Fraudulenta": "#EF4444"},
-        labels={"size": "Quantidade de Vagas", "industry_clean": "Setor", "status_vaga": "Status"},
-        title="Top 10 Setores / Indústrias no Filtro",
-    )
-    fig_setores.update_layout(
-        **empty_layout,
-        title_font=dict(size=14, color="#25314C"),
-        title_x=0.02,
-        yaxis={"categoryorder": "total ascending", "showgrid": False},
-        legend_title_text="",
-    )
-
-    # Gráfico 2: Taxa de Fraude (%) Com Logo vs Sem Logo + Remoto
-    grp_logo = (
-        df.groupby(["tem_logo", "remoto"], as_index=False)
-        .agg(Total=("id_vaga", "count"), Fraudes=("fraude_bin", "sum"))
-    )
-    grp_logo["Taxa_Fraude"] = (grp_logo["Fraudes"] / grp_logo["Total"] * 100).round(2)
-    grp_logo["Grupo"] = grp_logo["tem_logo"].map({"Sim": "Com Logo", "Não": "Sem Logo"})
-    grp_logo["Modalidade"] = grp_logo["remoto"].map({"Sim": "Remoto", "Não": "Presencial"})
-
-    fig_logo = px.bar(
-        grp_logo,
-        x="Grupo",
-        y="Taxa_Fraude",
-        color="Modalidade",
-        barmode="group",
-        text="Taxa_Fraude",
-        color_discrete_map={"Presencial": "#0EA5E9", "Remoto": "#F97316"},
-        labels={"Taxa_Fraude": "Taxa de Fraude (%)", "Grupo": "Presença de Logo da Empresa"},
-        title="Taxa de Fraude (%) — Logo da Empresa × Trabalho Remoto",
-    )
-    fig_logo.update_traces(texttemplate="%{text:.1f}%", textposition="outside", marker_line_width=0)
-    fig_logo.update_layout(
-        **empty_layout,
-        title_font=dict(size=14, color="#25314C"),
-        title_x=0.02,
-        yaxis_range=[0, max(grp_logo["Taxa_Fraude"].max() * 1.25, 5)],
-        yaxis={"gridcolor": "#EEF1F6"},
-        legend_title_text="",
-    )
-
-    # Gráfico 3: Tipo de Contrato vs Experiência
-    df_emp = (
-        df.groupby(["employment_type_clean", "status_vaga"], as_index=False)
-        .size()
-    )
-    fig_emp = px.bar(
-        df_emp,
-        x="employment_type_clean",
-        y="size",
-        color="status_vaga",
-        barmode="group",
-        color_discrete_map={"Real": "#10B981", "Fraudulenta": "#EF4444"},
-        labels={"employment_type_clean": "Tipo de Contrato", "size": "Vagas", "status_vaga": "Status"},
-        title="Distribuição por Tipo de Contrato",
-    )
-    fig_emp.update_layout(
-        **empty_layout,
-        title_font=dict(size=14, color="#25314C"),
-        title_x=0.02,
-        xaxis={"categoryorder": "total descending", "showgrid": False},
-        yaxis={"gridcolor": "#EEF1F6"},
-        legend_title_text="",
-    )
-
-    # Gráfico 4: Top 10 Países no Filtro
-    top_paises = df["pais"].value_counts().head(10).index.tolist()
-    df_pais = (
-        df[df["pais"].isin(top_paises)]
-        .groupby(["pais", "status_vaga"], as_index=False)
-        .size()
-    )
-    fig_paises = px.bar(
-        df_pais,
-        x="pais",
-        y="size",
-        color="status_vaga",
-        barmode="stack",
-        color_discrete_map={"Real": "#6366F1", "Fraudulenta": "#EF4444"},
-        labels={"pais": "País", "size": "Vagas", "status_vaga": "Status"},
-        title="Top 10 Países no Recorte Atual",
-    )
-    fig_paises.update_layout(
-        **empty_layout,
-        title_font=dict(size=14, color="#25314C"),
-        title_x=0.02,
-        xaxis={"categoryorder": "total descending", "showgrid": False},
-        yaxis={"gridcolor": "#EEF1F6"},
-        legend_title_text="",
-    )
 
 def empty_chart():
     fig = go.Figure()
@@ -685,7 +301,7 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     sectors["label"] = sectors.apply(lambda row: f"{row['taxa']:.1f}%  (n={format_count(int(row['total']))})", axis=1)
     fig_sectors = px.bar(sectors, x="taxa", y="industry_clean", orientation="h", text="label",
                          custom_data=["fraudes", "total"],
-                         labels={"taxa": "Taxa de fraude", "industry_clean": ""}, color_discrete_sequence=["#5774d8"])
+                         labels={"taxa": "Taxa de fraude", "industry_clean": ""}, color_discrete_sequence=["#368c91"])
     fig_sectors.update_traces(textposition="outside", cliponaxis=False, hovertemplate="<b>%{y}</b><br>Taxa: %{x:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>")
     chart_layout(fig_sectors, 390)
     fig_sectors.update_xaxes(showgrid=True, gridcolor="#edf1f5", range=[0, max(sectors["taxa"].max() * 1.7, 5)], ticksuffix="%")
@@ -700,13 +316,13 @@ def update_dashboard(status, paises, setores, contratos, exps, edus, logo, remot
     groups["amostra"] = groups["total"].map(lambda total: f"n={format_count(int(total))}")
     fig_logo = px.bar(groups, x="logo", y="taxa", color="modalidade", barmode="group",
                       text="amostra", custom_data=["fraudes", "total"], labels={"logo": "", "taxa": "Taxa de fraude (%)"},
-                      color_discrete_map={"Não remoto": "#5774d8", "Remoto": "#54b8aa"})
+                      color_discrete_map={"Não remoto": "#368c91", "Remoto": "#9bcfbe"})
     fig_logo.update_traces(textposition="outside", textfont_size=10, cliponaxis=False,
                            hovertemplate="<b>%{fullData.name}</b><br>Taxa: %{y:.1f}%<br>Fraudes: %{customdata[0]} de %{customdata[1]} anúncios<extra></extra>")
     chart_layout(fig_logo, 390)
     fig_logo.update_yaxes(range=[0, max(groups["taxa"].max() * 1.25, 5)], ticksuffix="%")
 
-    colors = {"Real": "#5774d8", "Fraudulenta": "#e9828c"}
+    colors = {"Real": "#368c91", "Fraudulenta": "#dd7c88"}
     contracts = df.groupby(["employment_type_clean", "status_vaga"], as_index=False).size()
     fig_contracts = px.bar(contracts, x="employment_type_clean", y="size", color="status_vaga", barmode="stack",
                            labels={"employment_type_clean": "", "size": "Anúncios", "status_vaga": ""},
