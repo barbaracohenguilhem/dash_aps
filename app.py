@@ -166,7 +166,7 @@ def population_mosaic():
 
 
 def story_graph(id, height):
-    return dcc.Graph(id=id, config={"displaylogo": False, "responsive": True,
+    return dcc.Graph(id=id, config={"displayModeBar": False, "displaylogo": False, "responsive": True,
                                     "modeBarButtonsToRemove": ["lasso2d", "select2d"]}, style={"height": f"{height}px"})
 
 

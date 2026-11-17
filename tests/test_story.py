@@ -76,3 +76,6 @@ class StoryTest(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.json["response"]), {"g-percurso", "flow-table", "flow-reading", "g-textos", "text-reading", "casebook-records"})
+
+    def test_narrative_charts_do_not_overlay_mobile_legends_with_a_toolbar(self):
+        self.assertFalse(app.story_graph("test", 360).config["displayModeBar"])
