@@ -1,0 +1,6 @@
+-r requirements.txt
+XlsxWriter==3.3.1
+openpyxl==3.1.5
+pytest==9.2.0
+flake8==7.5.0
+formulas==1.3.4

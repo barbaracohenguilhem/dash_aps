@@ -4,3 +4,6 @@ __pycache__/
 .DS_Store
 .vercel/
 
+node_modules/
+.pytest_cache/
+mise.local.toml
