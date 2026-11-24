@@ -49,6 +49,10 @@ assert.ok(["localhost", "127.0.0.1"].includes(new URL(url).hostname), "Use a loc
     await sidebar.getByRole("link", {name: "Visão geral", exact: true}).click();
     await page.getByRole("heading", {name: "Radar de vagas / Dashboard"}).waitFor();
     await page.waitForFunction(() => document.querySelector('.topbar-nav a[href="#visao-geral"]').getAttribute("aria-current") === "location");
+    await sidebar.getByRole("link", {name: "Como refazer a análise"}).click();
+    await page.locator("#como-analisar").getByRole("heading").waitFor();
+    await sidebar.getByRole("link", {name: "Visão geral", exact: true}).click();
+    assert.ok(await page.locator("#excel").evaluate(el => el.getBoundingClientRect().top < document.querySelector("#recorte").getBoundingClientRect().top));
     await audit("initial desktop");
     assert.equal(await page.locator("html").getAttribute("lang"), "pt-BR");
     await page.locator("#f-busca").focus();

@@ -13,6 +13,11 @@ import pandas as pd
 import xlsxwriter
 from xlsxwriter.utility import xl_col_to_name
 
+if __package__:
+    from .analysis_workbook import add_analysis_sheet
+else:
+    from analysis_workbook import add_analysis_sheet
+
 ROOT = Path(__file__).resolve().parents[1]
 EXPORT_COLUMNS = [
     "id_vaga", "title", "status_vaga", "fraude_bin", "pais", "location",
@@ -195,6 +200,7 @@ def build_workbook(output=ROOT / "Jobs_Database.xlsx", database=ROOT / "data/job
         dash.write_url("H53", "internal:'Leia-me'!B2", string="Como usar e interpretar →")
         guide.merge_range("B2:M3", "Três formas de explorar a mesma base", title)
         instructions = [
+            "Comece em Passo_a_passo: refaça contagens e taxas, confira o denominador e escreva sua interpretação nos campos amarelos. Material assistido por IA, não execução manual comprovada.",
             "1 / Dashboard: selecione País, Setor, Contrato, Status, Logo e Remoto. Todos remove o filtro. As seis condições são combinadas (E).",
             "2 / Base_Interativa_Vagas: tabela completa com textos, filtros nativos e subtotais das linhas visíveis. Seus filtros NÃO alteram o Dashboard, e vice-versa.",
             "3 / Analises: contagens e taxas de TODAS as categorias; responde às seis listas do Dashboard. Os gráficos mostram apenas as dez maiores categorias históricas de setor e país.",
@@ -206,8 +212,10 @@ def build_workbook(output=ROOT / "Jobs_Database.xlsx", database=ROOT / "data/job
         for index, text in enumerate(instructions):
             row = 5 + index * 3
             guide.merge_range(row, 1, row + 1, 12, text, note)
-        dash.activate()
-        dash.set_first_sheet()
+        steps = add_analysis_sheet(book, df)
+        dash.write_url("B55", "internal:'Passo_a_passo'!B2", string="Refazer as contas passo a passo →")
+        steps.activate()
+        steps.set_first_sheet()
     return output
 
 

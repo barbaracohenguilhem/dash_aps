@@ -86,6 +86,13 @@ class DashboardTest(unittest.TestCase):
         order = [child["props"].get("id") for child in main["children"]]
         self.assertLess(order.index("kpi-row"), order.index("recorte"))
 
+    def test_excel_is_presented_before_web_exploration(self):
+        children = app.dash_app.layout.children[1].children
+        ids = [getattr(child, "id", None) for child in children]
+        self.assertLess(ids.index("excel"), ids.index("kpi-row"))
+        self.assertLess(ids.index("como-analisar"), ids.index("recorte"))
+        self.assertEqual(len([value for value in ids if value == "excel"]), 1)
+
     def test_document_declares_brazilian_portuguese(self):
         with app.server.test_client().get("/") as response:
             self.assertIn('<html lang="pt-BR">', response.get_data(as_text=True))

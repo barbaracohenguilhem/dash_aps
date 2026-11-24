@@ -4,6 +4,15 @@
 
 Design editorial em tons de papel, filtros conectados e investigação dos anúncios. Os rótulos vêm da base original: o projeto **não classifica vagas atuais** e associações não comprovam fraude.
 
+## Comece pela análise, não pelo aplicativo
+
+1. Abra [Jobs_Database.xlsx](Jobs_Database.xlsx) → **Passo_a_passo**: contagens, taxas, comparação de recortes e campos amarelos para sua interpretação. Duplique a aba e refaça as fórmulas para praticar.
+2. Leia [ROTEIRO_ANALISE.md](ROTEIRO_ANALISE.md): pergunta, denominadores, fórmulas e limites. Não é um diário retroativo de trabalho manual.
+3. Execute [Analise.ipynb](Analise.ipynb): exemplos reais de entrada → campo derivado, verificações nas 10.000 linhas e conferência dos cálculos Excel.
+4. Use o app como apoio visual para explorar outros recortes. Não há conclusão pessoal pronta nem previsão de fraude.
+
+Esta mudança mantém a população publicada de **10.000 linhas e 453 rótulos**. A ampliação para nove partes preparada anteriormente não foi publicada e não é incorporada aqui. Os campos de entrada do notebook já vêm de uma base tratada, não raw original comprovado. Material preparado com assistência de IA: sua execução, revisão e interpretação não podem ser substituídas por uma aparência de trabalho manual.
+
 ## O que abrir
 
 - **Web:** [dash-aps.vercel.app](https://dash-aps.vercel.app) — versão publicada; mudanças de PR aparecem primeiro em preview.
@@ -64,6 +73,7 @@ Arquivo `.xlsx` com fórmulas e gráficos nativos, **sem macros, sem conexões e
 
 | Aba | Como funciona |
 | --- | --- |
+| **Passo_a_passo** | C7:C9: conta da base. C12:C15: recorte sem logo E remoto e diferença em p.p. Fórmulas sobre a base completa, independentes dos filtros; espaços amarelos para interpretação. |
 | **Dashboard** | Seis listas em **B6, F6, J6, B9, F9, J9**: País, Setor, Contrato, Status, Logo e Remoto. Condições combinadas atualizam três indicadores e quatro gráficos. `Todos` remove cada filtro. |
 | **Base_Interativa_Vagas** | Todos os anúncios e textos em tabela com AutoFiltro. Subtotais no topo acompanham as linhas visíveis. |
 | **Analises** | Contagens, rótulos de fraude e taxas de todas as categorias, respondendo às listas do Dashboard. |
