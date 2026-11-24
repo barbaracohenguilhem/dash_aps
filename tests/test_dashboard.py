@@ -60,6 +60,32 @@ class DashboardTest(unittest.TestCase):
         self.assertIn("/Jobs_Database.xlsx?raw=true", app.WORKBOOK_URL)
         self.assertTrue(app.WORKBOOK_URL.startswith("https://github.com/barbaracohenguilhem/dash_aps/blob/"))
 
+    def test_workspace_links_distinguish_data_dashboard_and_python(self):
+        layout = app.server.test_client().get("/_dash-layout").get_json()
+
+        def walk(node):
+            if isinstance(node, dict):
+                yield node
+                yield from walk(node.get("props", {}).get("children", []))
+            elif isinstance(node, list):
+                for child in node:
+                    yield from walk(child)
+
+        nodes = list(walk(layout))
+        props = [node["props"] for node in nodes]
+        sidebar = next(item for item in props if item.get("className") == "topbar-nav")
+        destinations = [item["props"].get("href") for item in sidebar["children"]]
+        for target in ("#excel-dados", "#excel", "#python-excel", "#recorte"):
+            self.assertIn(target, destinations)
+        links = [item["href"] for item in props if "href" in item]
+        self.assertIn(app.WORKBOOK_URL, links)
+        self.assertIn(app.WORKBOOK_URL.replace("Jobs_Database.xlsx", "Jobs_Data.xlsx"), links)
+        for path in ("Analise.ipynb", "scripts/build_workbook.py", "app.py"):
+            self.assertIn(f"{app.SOURCE_URL}/{path}", links)
+        main = next(item for item in props if item.get("className") == "main-content")
+        order = [child["props"].get("id") for child in main["children"]]
+        self.assertLess(order.index("kpi-row"), order.index("recorte"))
+
     def test_document_declares_brazilian_portuguese(self):
         with app.server.test_client().get("/") as response:
             self.assertIn('<html lang="pt-BR">', response.get_data(as_text=True))

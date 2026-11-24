@@ -5,6 +5,7 @@
     if (!nav || nav.dataset.ready) return Boolean(nav);
     nav.dataset.ready = "true";
     const links = Array.from(nav.querySelectorAll("[data-story-target]"));
+    const workspaceLinks = Array.from(document.querySelectorAll('.topbar-nav a[href^="#"]'));
     let scheduled = false;
 
     function markSection() {
@@ -14,6 +15,23 @@
       for (const link of links) {
         const target = document.getElementById(link.dataset.storyTarget);
         if (target && target.getBoundingClientRect().top <= threshold) active = link;
+      }
+      // The final section may be too short to reach the sticky-nav threshold.
+      const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+      const workspaceThreshold = atBottom ? window.innerHeight : threshold;
+      let current = workspaceLinks[0];
+      let nearestTop = -Infinity;
+      for (const link of workspaceLinks) {
+        const target = document.getElementById(link.hash.slice(1));
+        const top = target ? target.getBoundingClientRect().top : Infinity;
+        if (top <= workspaceThreshold && top > nearestTop) {
+          current = link;
+          nearestTop = top;
+        }
+      }
+      for (const link of workspaceLinks) {
+        if (link === current) link.setAttribute("aria-current", "location");
+        else link.removeAttribute("aria-current");
       }
       for (const link of links) {
         if (link === active) link.setAttribute("aria-current", "step");

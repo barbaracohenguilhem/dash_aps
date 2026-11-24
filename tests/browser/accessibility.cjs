@@ -38,6 +38,17 @@ assert.ok(["localhost", "127.0.0.1"].includes(new URL(url).hostname), "Use a loc
     await page.locator(".case-card summary").first().click();
     await page.locator(".case-card details[open]").first().getByRole("heading", {name: "Descrição", exact: true}).waitFor();
     await page.locator(".case-card summary").first().click();
+    const sidebar = page.getByRole("navigation", {name: "Navegação principal", exact: true});
+    await sidebar.getByRole("link", {name: "Python + Excel"}).click();
+    await page.locator("#python-excel").getByRole("heading", {name: "Dos dados à planilha."}).waitFor();
+    assert.match(await page.getByRole("link", {name: "Abrir caderno Python"}).getAttribute("href"), /\/Analise\.ipynb$/);
+    await sidebar.getByRole("link", {name: "Excel · base de dados"}).click();
+    await page.locator("#excel-dados").getByRole("heading").waitFor();
+    await sidebar.getByRole("link", {name: "Dashboard no Excel"}).click();
+    await page.locator("#excel").getByRole("heading").waitFor();
+    await sidebar.getByRole("link", {name: "Visão geral", exact: true}).click();
+    await page.getByRole("heading", {name: "Radar de vagas / Dashboard"}).waitFor();
+    await page.waitForFunction(() => document.querySelector('.topbar-nav a[href="#visao-geral"]').getAttribute("aria-current") === "location");
     await audit("initial desktop");
     assert.equal(await page.locator("html").getAttribute("lang"), "pt-BR");
     await page.locator("#f-busca").focus();
@@ -92,6 +103,9 @@ assert.ok(["localhost", "127.0.0.1"].includes(new URL(url).hostname), "Use a loc
     await page.locator("#preset-fraude").click();
     await page.locator("#active-filters").filter({hasText: "Status: Fraudulenta"}).waitFor();
     await page.getByText("453 de 10.000 anúncios · Status filtrado", {exact: false}).waitFor();
+    await sidebar.getByRole("link", {name: "Python + Excel"}).click();
+    await page.waitForFunction(() => document.querySelector('.topbar-nav a[href="#python-excel"]').getAttribute("aria-current") === "location");
+    assert.match(await page.locator("#active-filters").textContent(), /Status: Fraudulenta/);
     const workbook = page.getByRole("link", {name: "↓ Baixar dashboard Excel"});
     assert.match(await workbook.getAttribute("href"), /github\.com\/barbaracohenguilhem\/dash_aps\/blob\/[^/]+\/Jobs_Database\.xlsx\?raw=true/);
     await page.locator("#btn-reset-context").click();
@@ -103,6 +117,9 @@ assert.ok(["localhost", "127.0.0.1"].includes(new URL(url).hostname), "Use a loc
     await page.locator('a[href="#setores"]').first().click();
     assert.equal(await page.locator(".atlas").getAttribute("open"), "");
     await page.setViewportSize({width: 390, height: 844});
+    await sidebar.getByRole("link", {name: "Excel · base de dados"}).click();
+    await page.locator("#excel-dados").getByRole("link", {name: "↓ Baixar base Excel (.xlsx)"}).waitFor();
+    await sidebar.getByRole("link", {name: "Visão geral", exact: true}).click();
     await audit("mobile after reset");
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "no page-wide mobile overflow");
     assert.deepEqual(errors, [], "browser errors");
