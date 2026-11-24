@@ -180,6 +180,7 @@ dash_app.layout = html.Div(className="app-shell", children=[
         html.Nav(className="topbar-nav", **{"aria-label": "Navegação principal"}, children=[
             html.Span("ANÁLISE", className="nav-group-label"),
             html.A("Visão geral", href="#visao-geral"),
+            html.A("Como refazer a análise", href="#como-analisar"),
             html.A("Filtros e recorte", href="#recorte"),
             html.A("Gráficos e padrões", href="#percurso"),
             html.A("Explorador de vagas", href="#explorador"),
@@ -198,8 +199,8 @@ dash_app.layout = html.Div(className="app-shell", children=[
             html.Div(className="intro-story", children=[
                 html.Div("WORKSPACE / VISÃO GERAL", className="eyebrow"),
                 html.H1(["Radar de vagas", html.Span(" / Dashboard")]),
-                html.P("Explore a base histórica, cruze indicadores e leve a análise para Excel ou Python. Tudo parte dos mesmos dados.", className="intro-copy"),
-                html.A(["Explorar os indicadores", html.Span(" ↓", **{"aria-hidden": "true"})], href="#recorte", className="explore-link"),
+                html.P("Comece pelo Excel: refaça os cálculos, explique o denominador e escreva sua leitura. Use Python para conferir o processo e este painel para explorar os resultados.", className="intro-copy"),
+                html.A("↓ Começar pelo Excel", href=WORKBOOK_URL, className="button button-primary workbook-download"),
             ]),
             population_mosaic(),
             html.Div(className="intro-actions", children=[
@@ -209,11 +210,38 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 html.Div(id="export-status", className="export-status", role="status"),
             ]),
         ]),
+        html.Section(id="excel", tabIndex=-1, className="workbook-panel", children=[
+            html.Div([
+                html.Div("01 / COMEÇAR PELO EXCEL", className="eyebrow"),
+                html.H2("Comece pelo Excel, não pelo app."),
+                html.P("Na aba Passo_a_passo, refaça contagens e taxas e escreva sua leitura. Depois use Dashboard para comparar seis filtros combinados e quatro gráficos nativos. Sem macros ou conexão à internet.", className="section-note"),
+                html.A("↓ Baixar dashboard Excel", href=WORKBOOK_URL, className="button button-primary workbook-download"),
+                html.A("Baixar somente os dados (.xlsx)", href=WORKBOOK_URL.replace("Jobs_Database.xlsx", "Jobs_Data.xlsx"), className="back-link data-download"),
+                html.P("Arquivo completo da base histórica — não aplica os filtros desta página. Para levar somente seu recorte, use Exportar CSV no início.", className="workbook-scope"),
+            ]),
+            html.Ol(className="workbook-steps", children=[
+                html.Li([html.Span("01"), html.Div([html.Strong("Comece em Passo_a_passo"), html.P("Confira as fórmulas em C7:C15, duplique a aba e refaça as contas. Preencha os campos amarelos com sua própria interpretação.")])]),
+                html.Li([html.Span("02"), html.Div([html.Strong("Investigue a base completa"), html.P("Leia os textos e use os filtros da tabela. Eles são independentes das listas do Dashboard.")])]),
+                html.Li([html.Span("03"), html.Div([html.Strong("Leve a interpretação junto"), html.P("A aba Leia-me explica taxas, recortes e limites. Abra no Microsoft Excel com cálculo automático.")])]),
+            ]),
+        ]),
         html.Div(id="kpi-row", className="kpi-grid", **{"aria-label": "Indicadores do recorte"}),
         html.Nav(className="workspace-tools", **{"aria-label": "Escolha como trabalhar com os dados"}, children=[
-            html.A([html.Span("01 / XLSX", className="tool-tag"), html.Strong("Excel"), html.Span("Base completa para suas análises"), html.Span("Ver planilha →", className="tool-action")], href="#excel-dados"),
-            html.A([html.Span("02 / DASHBOARD", className="tool-tag"), html.Strong("Dashboard no Excel"), html.Span("Filtros, indicadores e gráficos nativos"), html.Span("Conhecer o dashboard →", className="tool-action")], href="#excel"),
-            html.A([html.Span("03 / PYTHON", className="tool-tag"), html.Strong("Python + Excel"), html.Span("Caderno de análise e geração da planilha"), html.Span("Explorar o código →", className="tool-action")], href="#python-excel"),
+            html.A([html.Span("01 / XLSX", className="tool-tag"), html.Strong("1. Refazer no Excel"), html.Span("Fórmulas abertas e interpretação sua"), html.Span("Começar pelo passo a passo →", className="tool-action")], href="#excel"),
+            html.A([html.Span("02 / PYTHON", className="tool-tag"), html.Strong("2. Conferir no Python"), html.Span("Campos de entrada, transformação e cálculo"), html.Span("Abrir o processo →", className="tool-action")], href="#python-excel"),
+            html.A([html.Span("03 / PAINEL", className="tool-tag"), html.Strong("3. Explorar no painel"), html.Span("Compare recortes sem perder o contexto"), html.Span("Escolher um recorte →", className="tool-action")], href="#recorte"),
+        ]),
+        html.Section(id="como-analisar", tabIndex=-1, className="analysis-guide", children=[
+            html.Div("PRIMEIRO O RACIOCÍNIO, DEPOIS O GRÁFICO", className="eyebrow"),
+            html.H2("Uma pergunta. Uma conta que você consegue explicar."),
+            html.Ol(children=[
+                html.Li([html.Strong("Pergunte"), html.P("Qual é a proporção de rótulos de fraude na base? A pergunta é descritiva: não estamos prevendo se uma vaga é falsa.")]),
+                html.Li([html.Strong("Calcule no Excel"), html.P("Abra Passo_a_passo: C7 conta anúncios, C8 soma rótulos e C9 divide C8 por C7. As fórmulas ficam visíveis na barra de fórmulas.")]),
+                html.Li([html.Strong("Compare e questione"), html.P("Em C12:C15, repita para Logo = Não E Remoto = Sim. Compare os denominadores antes das taxas. Uma associação não explica a causa.")]),
+                html.Li([html.Strong("Escreva sua leitura"), html.P("Os campos amarelos ficam em branco para você registrar evidência, uma explicação alternativa e um limite. Não são conclusões atribuídas a você.")]),
+            ]),
+            html.P("Versão publicada: 10.000 linhas e 453 rótulos de fraude. A ampliação para nove partes não foi publicada e não está misturada nestes resultados. Base já tratada, não raw original comprovado. Material produzido com assistência de IA; refazer e revisar é parte do trabalho.", className="workbook-scope"),
+            html.A("Abrir roteiro de análise ↗", href=f"{SOURCE_URL}/ROTEIRO_ANALISE.md", target="_blank", rel="noopener noreferrer", className="back-link"),
         ]),
         html.Div(className="notice", children=[
             html.Span("i", className="notice-icon", **{"aria-hidden": "true"}),
@@ -392,21 +420,6 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 ]),
             ]),
         ])),
-        html.Section(id="excel", tabIndex=-1, className="workbook-panel", children=[
-            html.Div([
-                html.Div("05 / LEVAR COM VOCÊ", className="eyebrow"),
-                html.H2("A análise continua no Excel."),
-                html.P("A mesma base, em uma planilha independente: seis filtros combinados, indicadores e quatro gráficos nativos. Sem macros e sem conexão à internet.", className="section-note"),
-                html.A("↓ Baixar dashboard Excel", href=WORKBOOK_URL, className="button button-primary workbook-download"),
-                html.A("Baixar somente os dados (.xlsx)", href=WORKBOOK_URL.replace("Jobs_Database.xlsx", "Jobs_Data.xlsx"), className="back-link data-download"),
-                html.P("Arquivo completo da base histórica — não aplica os filtros desta página. Para levar somente seu recorte, use Exportar CSV no início.", className="workbook-scope"),
-            ]),
-            html.Ol(className="workbook-steps", children=[
-                html.Li([html.Span("01"), html.Div([html.Strong("Escolha na aba Dashboard"), html.P("País, setor, contrato, status, logo e trabalho remoto atualizam os indicadores e gráficos juntos.")])]),
-                html.Li([html.Span("02"), html.Div([html.Strong("Investigue a base completa"), html.P("Leia os textos e use os filtros da tabela. Eles são independentes das listas do Dashboard.")])]),
-                html.Li([html.Span("03"), html.Div([html.Strong("Leve a interpretação junto"), html.P("A aba Leia-me explica taxas, recortes e limites. Abra no Microsoft Excel com cálculo automático.")])]),
-            ]),
-        ]),
         html.Section(id="excel-dados", tabIndex=-1, className="resource-panel", children=[
             html.Div([
                 html.Div("EXCEL / BASE DE DADOS", className="eyebrow"),
@@ -422,7 +435,7 @@ dash_app.layout = html.Div(className="app-shell", children=[
             html.Div([
                 html.Div("PYTHON + EXCEL / CÓDIGO ABERTO", className="eyebrow"),
                 html.H2("Dos dados à planilha."),
-                html.P("Veja os cálculos no caderno Python e o script que gera o dashboard Excel a partir da mesma base SQLite usada pelo app. O painel web é construído com Python, Dash e Plotly.", className="section-note"),
+                html.P("O caderno mostra campo de entrada → regra → campo derivado, com exemplos reais da base e cálculos conferidos. Ele não reconstrói a limpeza anterior ao histórico nem apresenta um diário de trabalho manual.", className="section-note"),
             ]),
             html.Div(className="source-links", children=[
                 html.A("Abrir caderno Python (.ipynb) ↗", href=f"{SOURCE_URL}/Analise.ipynb", target="_blank", rel="noopener noreferrer"),

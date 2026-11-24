@@ -95,7 +95,7 @@ class WorkbookTest(unittest.TestCase):
         self.assertAlmostEqual(wb["Dashboard"]["J15"].value, fraud / total)
         self.assertEqual([r[0] for r in wb["Base_Interativa_Vagas"].iter_rows(min_row=5, max_col=1, values_only=True)], ids)
         self.assertEqual(wb["Listas"].sheet_state, "hidden")
-        self.assertEqual(wb.active.title, "Dashboard")
+        self.assertEqual(wb.active.title, "Passo_a_passo")
         wb.close()
         from zipfile import ZipFile
         with ZipFile(path) as archive:
@@ -116,6 +116,28 @@ class WorkbookTest(unittest.TestCase):
             count += 1
             self.assertTrue(all(cell.data_type != "f" for cell in row))
         self.assertEqual(count, expected)
+        wb.close()
+
+    def test_step_by_step_formulas_recalculate_and_ignore_dashboard_filters(self):
+        solution = self.model.calculate(inputs={self.prefix + "B6": [["US"]]})
+        prefix = "'[fixture.xlsx]PASSO_A_PASSO'!"
+        selected = self.df[(self.df.tem_logo == "Não") & (self.df.remoto == "Sim")]
+        n, fraud = len(selected), int(selected.fraude_bin.sum())
+        total, all_fraud = len(self.df), int(self.df.fraude_bin.sum())
+        for cell, value in [("C7", total), ("C8", all_fraud), ("C9", all_fraud / total),
+                            ("C12", n), ("C13", fraud), ("C14", fraud / n),
+                            ("C15", 100 * (fraud / n - all_fraud / total))]:
+            self.assertAlmostEqual(float(solution[prefix + cell].value[0, 0]), value)
+
+    def test_delivered_step_by_step_caches_and_interpretation_spaces(self):
+        wb = openpyxl.load_workbook(ROOT / "Jobs_Database.xlsx", read_only=True, data_only=True)
+        sheet = wb["Passo_a_passo"]
+        for cell, value in [("C7", 10000), ("C8", 453), ("C9", .0453),
+                            ("C12", 120), ("C13", 26), ("C14", 26/120),
+                            ("C15", 100 * (26/120 - 453/10000))]:
+            self.assertAlmostEqual(sheet[cell].value, value)
+        for cell in ["B19", "B23", "B27"]:
+            self.assertIsNone(sheet[cell].value, "Personal interpretation must remain blank")
         wb.close()
 
     def test_invalid_filter_does_not_silently_create_a_misleading_workbook(self):
