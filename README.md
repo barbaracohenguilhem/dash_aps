@@ -46,6 +46,8 @@ Abra `http://localhost:8050`. Não exige API key nem serviço externo.
 
 ### Na web
 
+O menu lateral separa a exploração do painel dos materiais: **Excel · base de dados** (uma aba sem fórmulas), **Dashboard no Excel** (planilha interativa) e **Python + Excel** (caderno, script gerador e código do app). No celular, o menu aparece acima do painel. Os indicadores do recorte ficam no início; navegar pelos atalhos não limpa os filtros. Os arquivos completos não são exportações do recorte e não sincronizam alterações com o site.
+
 1. Comece pela composição da base: o mosaico usa blocos de 1% e um bloco parcial para preservar a fração exata. É sempre a **base completa**, não o recorte.
 2. Escolha uma pergunta pronta ou combine os filtros principais e avançados. Perguntas prontas **substituem** o recorte anterior.
 3. Siga o percurso de combinações (Sankey), a distribuição acumulada dos comprimentos dos textos e o caderno de dois registros. Os exemplos usam o menor ID por rótulo disponível, não uma seleção representativa. As tabelas e os resumos textuais dão os números fora dos gráficos.

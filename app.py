@@ -16,6 +16,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Immutable workbook link on deployments; main is the local-development fallback.
 WORKBOOK_REF = os.environ.get("VERCEL_GIT_COMMIT_SHA") or "main"
 WORKBOOK_URL = f"https://github.com/barbaracohenguilhem/dash_aps/blob/{quote(WORKBOOK_REF, safe='')}/Jobs_Database.xlsx?raw=true"
+SOURCE_URL = f"https://github.com/barbaracohenguilhem/dash_aps/blob/{quote(WORKBOOK_REF, safe='')}"
 DB_PATH = os.path.join(BASE_DIR, "data", "jobs_database.db")
 DIMENSIONS = ["pais", "industry_clean", "employment_type_clean", "experience_clean", "education_clean"]
 TABLE_COLS = [
@@ -174,13 +175,18 @@ dash_app.layout = html.Div(className="app-shell", children=[
     html.Header(className="topbar", children=[
         html.Div(className="brand", children=[
             html.Div(className="brand-mark", **{"aria-hidden": "true"}),
-            html.Div([html.Div("RADAR DE VAGAS", className="brand-name"), html.Div("Pesquisa de anúncios de emprego", className="brand-subtitle")]),
+            html.Div([html.Div("RADAR DE VAGAS", className="brand-name"), html.Div("Workspace de análise", className="brand-subtitle")]),
         ]),
         html.Nav(className="topbar-nav", **{"aria-label": "Navegação principal"}, children=[
+            html.Span("ANÁLISE", className="nav-group-label"),
             html.A("Visão geral", href="#visao-geral"),
-            html.A("Percurso", href="#percurso"),
-            html.A("Explorador", href="#explorador"),
-            html.A("Excel", href="#excel"),
+            html.A("Filtros e recorte", href="#recorte"),
+            html.A("Gráficos e padrões", href="#percurso"),
+            html.A("Explorador de vagas", href="#explorador"),
+            html.Span("ARQUIVOS E FERRAMENTAS", className="nav-group-label"),
+            html.A([html.Span("XLSX", className="nav-file"), "Excel · base de dados"], href="#excel-dados"),
+            html.A([html.Span("DASH", className="nav-file"), "Dashboard no Excel"], href="#excel"),
+            html.A([html.Span("PY", className="nav-file"), "Python + Excel"], href="#python-excel"),
         ]),
         html.Div(className="topbar-right", children=[
             html.Span("BASE HISTÓRICA", className="data-badge"),
@@ -190,18 +196,24 @@ dash_app.layout = html.Div(className="app-shell", children=[
     html.Main(id="visao-geral", tabIndex=-1, className="main-content", children=[
         html.Div(className="page-intro", children=[
             html.Div(className="intro-story", children=[
-                html.Div("UM ARQUIVO / DEZ MIL HISTÓRIAS", className="eyebrow"),
-                html.H1(["Uma vaga.", html.Br(), "Muitas pistas.", html.Br(), html.Span("Nenhuma certeza.")]),
-                html.P("O que um anúncio revela — e o que ele não pode provar? Entre no arquivo e descubra os padrões por trás dos rótulos.", className="intro-copy"),
-                html.A(["Siga as pistas", html.Span(" ↓", **{"aria-hidden": "true"})], href="#ponto-de-partida", className="explore-link"),
+                html.Div("WORKSPACE / VISÃO GERAL", className="eyebrow"),
+                html.H1(["Radar de vagas", html.Span(" / Dashboard")]),
+                html.P("Explore a base histórica, cruze indicadores e leve a análise para Excel ou Python. Tudo parte dos mesmos dados.", className="intro-copy"),
+                html.A(["Explorar os indicadores", html.Span(" ↓", **{"aria-hidden": "true"})], href="#recorte", className="explore-link"),
             ]),
             population_mosaic(),
             html.Div(className="intro-actions", children=[
-                html.Div("OBSERVAR / COMPARAR / INVESTIGAR", className="intro-caption"),
+                html.Div("PAINEL INTERATIVO · PYTHON / DASH", className="intro-caption"),
                 html.Button("Limpar filtros", id="btn-reset", n_clicks=0, className="button button-secondary"),
                 html.Button("↓  Exportar CSV", id="btn-download", n_clicks=0, className="button button-primary"),
                 html.Div(id="export-status", className="export-status", role="status"),
             ]),
+        ]),
+        html.Div(id="kpi-row", className="kpi-grid", **{"aria-label": "Indicadores do recorte"}),
+        html.Nav(className="workspace-tools", **{"aria-label": "Escolha como trabalhar com os dados"}, children=[
+            html.A([html.Span("01 / XLSX", className="tool-tag"), html.Strong("Excel"), html.Span("Base completa para suas análises"), html.Span("Ver planilha →", className="tool-action")], href="#excel-dados"),
+            html.A([html.Span("02 / DASHBOARD", className="tool-tag"), html.Strong("Dashboard no Excel"), html.Span("Filtros, indicadores e gráficos nativos"), html.Span("Conhecer o dashboard →", className="tool-action")], href="#excel"),
+            html.A([html.Span("03 / PYTHON", className="tool-tag"), html.Strong("Python + Excel"), html.Span("Caderno de análise e geração da planilha"), html.Span("Explorar o código →", className="tool-action")], href="#python-excel"),
         ]),
         html.Div(className="notice", children=[
             html.Span("i", className="notice-icon", **{"aria-hidden": "true"}),
@@ -286,7 +298,6 @@ dash_app.layout = html.Div(className="app-shell", children=[
                     html.Button("Limpar todos os filtros", id="btn-reset-context", n_clicks=0, className="text-button"),
                 ]),
             ]),
-            html.Div(id="kpi-row", className="kpi-grid"),
             html.Section(id="analysis-summary", className="analysis-summary", **{"aria-label": "Resumo do recorte", "aria-live": "polite"}),
             story_links("Do panorama às perguntas: por onde aprofundar?", [
                 ("Comparar setores ↓", "setores"), ("Cruzar sinais →", "sinais"),
@@ -394,6 +405,30 @@ dash_app.layout = html.Div(className="app-shell", children=[
                 html.Li([html.Span("01"), html.Div([html.Strong("Escolha na aba Dashboard"), html.P("País, setor, contrato, status, logo e trabalho remoto atualizam os indicadores e gráficos juntos.")])]),
                 html.Li([html.Span("02"), html.Div([html.Strong("Investigue a base completa"), html.P("Leia os textos e use os filtros da tabela. Eles são independentes das listas do Dashboard.")])]),
                 html.Li([html.Span("03"), html.Div([html.Strong("Leve a interpretação junto"), html.P("A aba Leia-me explica taxas, recortes e limites. Abra no Microsoft Excel com cálculo automático.")])]),
+            ]),
+        ]),
+        html.Section(id="excel-dados", tabIndex=-1, className="resource-panel", children=[
+            html.Div([
+                html.Div("EXCEL / BASE DE DADOS", className="eyebrow"),
+                html.H2("A planilha, sem complicação."),
+                html.P("Uma única aba com os 10.000 anúncios e todas as colunas. Ideal para consultar, organizar e criar suas próprias análises. Este arquivo não contém o dashboard nem fórmulas.", className="section-note"),
+            ]),
+            html.Div([
+                html.A("↓ Baixar base Excel (.xlsx)", href=WORKBOOK_URL.replace("Jobs_Database.xlsx", "Jobs_Data.xlsx"), className="button button-primary resource-download"),
+                html.P("Base completa da revisão publicada. Os filtros do site não são aplicados ao arquivo.", className="workbook-scope"),
+            ]),
+        ]),
+        html.Section(id="python-excel", tabIndex=-1, className="resource-panel", children=[
+            html.Div([
+                html.Div("PYTHON + EXCEL / CÓDIGO ABERTO", className="eyebrow"),
+                html.H2("Dos dados à planilha."),
+                html.P("Veja os cálculos no caderno Python e o script que gera o dashboard Excel a partir da mesma base SQLite usada pelo app. O painel web é construído com Python, Dash e Plotly.", className="section-note"),
+            ]),
+            html.Div(className="source-links", children=[
+                html.A("Abrir caderno Python (.ipynb) ↗", href=f"{SOURCE_URL}/Analise.ipynb", target="_blank", rel="noopener noreferrer"),
+                html.A("Ver geração do Excel (.py) ↗", href=f"{SOURCE_URL}/scripts/build_workbook.py", target="_blank", rel="noopener noreferrer"),
+                html.A("Ver código do dashboard web ↗", href=f"{SOURCE_URL}/app.py", target="_blank", rel="noopener noreferrer"),
+                html.P("Requer execução local com as dependências do projeto. Alterar a planilha baixada não atualiza o site; não há sincronização automática.", className="workbook-scope"),
             ]),
         ]),
         html.Footer("Radar de vagas · Uma ferramenta de exploração, não um classificador de fraude.", className="footer"),
